@@ -1,45 +1,37 @@
+mod init;
+use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::io;
 
 #[derive(Deserialize, Serialize, Debug)]
-struct Settings {
-    // Top dpad
-    d1_left: char,
-    d1_up: char,
-    d1_right: char,
-    d1_down: char,
-
-    // Top buttons
-    x1: char,
-    a1: char,
-    b1: char,
-    y1: char,
-
-    // Bottom dpad
-    d2_left: char,
-    d2_up: char,
-    d2_right: char,
-    d2_down: char,
-
-    // Bottom buttons
-    x2: char,
-    a2: char,
-    b2: char,
-    y2: char,
+struct Input {
+    input: String,
 }
 
-fn init() -> Settings {
-    let settings: Settings = {
-        let data = fs::read_to_string("./settings.json").expect("Error reading settings.json");
-        serde_json::from_str(&data).unwrap()
-    };
+#[tokio::main]
+async fn main() -> Result<(), io::Error> {
+    let settings = init::init();
 
-    settings
-}
+    let client = reqwest::Client::new();
 
-fn main() -> Result<(), io::Error> {
-    println!("{:?}", init());
+    let res = client
+        .get(&settings.url)
+        .header("AUTH", settings.auth)
+        .header(CONTENT_TYPE, "application/json")
+        .header("ACCEPT", "application/json")
+        .send()
+        .await
+        .unwrap();
+
+    match res.status() {
+        reqwest::StatusCode::OK => match res.json::<Input>().await {
+            Ok(parsed) => println!("{:?}", parsed),
+            Err(err) => println!("Response did not match type of Input {:?}", err),
+        },
+        _other => {
+            panic!("Response from {:?} was not ok", &settings.url)
+        }
+    }
 
     Ok(())
 }
