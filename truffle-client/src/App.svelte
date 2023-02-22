@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { embed } from "@trufflehq/sdk";
+  import { embed, org as orgClient } from "@trufflehq/sdk";
 
   embed.setSize("400px", "300px");
   embed.setPosition("20px", "100px");
@@ -7,11 +7,23 @@
     embed.hide();
   }
 
+  let id: string;
+
+  const subscription = orgClient.observable.subscribe({
+    next: (org) => {
+      id = org.id;
+    },
+    error: (error) => {
+      console.error(error);
+    },
+    complete: () => {},
+  });
+
   let url = "";
   let toggled = true;
 
   function post(key: string) {
-    console.log(JSON.stringify({ input: key }));
+    console.log(JSON.stringify({ input: key, id: id }));
     if (url !== "") {
       fetch(url, {
         method: "POST",
