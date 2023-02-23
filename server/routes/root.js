@@ -5,7 +5,7 @@ const queue = [];
 module.exports = async function(fastify, opts) {
   await fastify.register(import("@fastify/rate-limit"), {
     global: true,
-    max: 1,
+    max: 2,
     timeWindow: 1000,
   });
 

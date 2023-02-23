@@ -23,7 +23,6 @@
   let toggled = true;
 
   function post(key: string) {
-    console.log(JSON.stringify({ input: key, id: id }));
     if (url !== "") {
       fetch(url, {
         method: "POST",
