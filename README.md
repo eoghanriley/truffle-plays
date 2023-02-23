@@ -18,6 +18,8 @@ In order for you to read the inputs there is a client you run on your computer w
 
 ## Keymap
 
+https://github.com/eoghanriley/truffle-plays/blob/main/keymap.png
+
 ## How to use
 
 ### Contact
