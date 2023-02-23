@@ -20,6 +20,6 @@
   "y2": "g",
 
   "auth": "e",
-  "poll_rate": 10,
-  "url": "http://127.0.0.1:3000/"
+  "poll_rate": 1000,
+  "url": "https://truffle-plays.fly.dev/"
 }
