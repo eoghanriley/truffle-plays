@@ -52,7 +52,8 @@ We reccomend creating a new folder either in Downloads or somewhere else to hold
 Now in the same place the streamer client is create a file called settings.json
 Paste this in as a starting point
 
-```{
+```
+{
   "d1_left": "a",
   "d1_up": "w",
   "d1_right": "d",
