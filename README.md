@@ -46,11 +46,11 @@ This should open up a new window called the command prompt.
 Once the command prompt is open type flyctl launch.
 This will walk you through launching the server and will require you to have an account and card on file with them.
 Once it says deployed on the fly dashboard the server side is done.
-Skip Locally to Streamer-client
+Skip Locally and go to Streamer-client
 
 #### Locally
 
-These instructions are more complicate than the hosting and assume a little bit of knowledge about the command prompt.
+These instructions are more complicated than the hosting and assume a little bit of knowledge about the command prompt.
 First you need to have nodejs installed if you do not go here https://nodejs.org/en/download/
 Next you need to have a copy of the code on your computer either through git if you know what that is, if not just download and extract the zip.
 Now open up your command prompt and go to the directory where the code is then go into the server folder.
