@@ -30,7 +30,8 @@ Lastly if you use this shoot me and email at truffle@eoghanriley.dev so I can se
 
 ### Server
 
-If you are testing this locally skip to Locally
+If you are testing this locally skip to Locally.
+We have a test server up used just to try it out. DO NOT USE THIS SERVER ON STREAM as it is insecure. Here is the url https://truffle-plays.fly.dev/ password is e
 
 #### Hosting
 
