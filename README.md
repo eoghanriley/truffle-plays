@@ -30,6 +30,10 @@ Lastly if you use this shoot me and email at truffle@eoghanriley.dev so I can se
 
 ### Server
 
+If you are testing this locally skip to Locally
+
+#### Hosting
+
 We reccomend https://fly.io as your hosting provider because they have a gracious free period.
 In order to deploy the server code hit the big green button that says Code on https://github.com/eoghanriley/truffle-plays then select Download Zip.
 Once you have done that extract the zip and open up the fly.toml.
@@ -42,6 +46,18 @@ This should open up a new window called the command prompt.
 Once the command prompt is open type flyctl launch.
 This will walk you through launching the server and will require you to have an account and card on file with them.
 Once it says deployed on the fly dashboard the server side is done.
+Skip Locally to Streamer-client
+
+#### Locally
+
+These instructions are more complicate than the hosting and assume a little bit of knowledge about the command prompt.
+First you need to have nodejs installed if you do not go here https://nodejs.org/en/download/
+Next you need to have a copy of the code on your computer either through git if you know what that is, if not just download and extract the zip.
+Now open up your command prompt and go to the directory where the code is then go into the server folder.
+Once you are in the server directory run `npm install` in the command prompt.
+After it is done installing run `npm run start` this will start the server and give you a url along the lines of 127.0.0.1:3000.
+This is the url that will be used later.
+You have now complete the server portion.
 
 ### Streamer-client
 
