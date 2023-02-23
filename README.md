@@ -109,7 +109,7 @@ Remember if you change a value in this file you must restart the client for it t
 ### Viewer client
 
 You are almost done setting this up the last thing is letting your viewers send inputs.
-You need to add our embed on your side to truffle.
+You need to add our embed on your side to truffle here is the url https://truffle-plays.vercel.app/.
 
 ### Congratulations!
 
