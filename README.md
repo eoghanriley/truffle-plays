@@ -24,9 +24,12 @@ https://github.com/eoghanriley/truffle-plays/blob/main/keymap.png
 
 If you have any issues in setting it up or find any bugs you can either create an issue here on github or email me at truffle@eoghanriley.dev
 If you find a security issue ONLY send it truffle@eoghanriley.dev and please do it promptly so it can be fixed.
-Lastly if you use this shoot me and email at truffle@eoghanriley.dev as I would love to see it in action.
+If you use this shoot me and email at truffle@eoghanriley.dev as I would love to see it in action.
+Lastly, if you work at truffle and want me to change the name I completley understand and just shoot me an email.
 
 ## How to use
+
+Currently truffle-plays is in alpha which is why there is the whole hosting setup. If you want to know about the future of the project you can skip to the end of this guide to see where I talk about the future plans of truffle-plays
 
 ### Server
 
@@ -119,4 +122,4 @@ Have fun.
 
 ## Future plans
 
-Currently the reason you need to host the server is because of cost. Unfortunatley hosting costs money especially when talking about streamers. Each stream can have thousands of people sending inputs per second and scale that up to multiple streamers thats a big number that costs a lot of money. For the scope of the truffle hackathon I didn't want to make anything paid which is why I chose the route of needing streamers to host it. Since this is a beta, if there is interest and or actual usage of truffle-plays I will consider building this out so you don't need to host and further streamlining the process for both the user and streamer.
+Currently the reason you need to host the server is because of cost. Unfortunatley hosting costs money especially when talking about streamers. Each stream can have thousands of people sending inputs per second and scale that up to multiple streamers thats a big number that costs a lot of money. For the scope of the truffle hackathon I didn't want to make anything paid which is why I chose the route of needing streamers to host it. Since this is a alpha, if there is interest I will consider building this out so you don't need to host and further streamlining the process for both the user and streamer.
