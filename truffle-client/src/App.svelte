@@ -1,23 +1,11 @@
 <script lang="ts">
-  import { embed, org as orgClient } from "@trufflehq/sdk";
+  import { embed } from "@trufflehq/sdk";
 
   embed.setSize("400px", "300px");
   embed.setPosition("20px", "100px");
   if (!document.referrer) {
     embed.hide();
   }
-
-  let id: string;
-
-  const subscription = orgClient.observable.subscribe({
-    next: (org) => {
-      id = org.id;
-    },
-    error: (error) => {
-      console.error(error);
-    },
-    complete: () => {},
-  });
 
   let url = "";
   let toggled = true;
