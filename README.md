@@ -20,13 +20,13 @@ In order for you to read the inputs there is a client you run on your computer w
 
 https://github.com/eoghanriley/truffle-plays/blob/main/keymap.png
 
-## How to use
-
-### Contact
+## Contact
 
 If you have any issues in setting it up or find any bugs you can either create an issue here on github or email me at truffle@eoghanriley.dev
 If you find a security issue ONLY send it truffle@eoghanriley.dev and please do it promptly so it can be fixed.
-Lastly if you use this shoot me and email at truffle@eoghanriley.dev so I can see it an action.
+Lastly if you use this shoot me and email at truffle@eoghanriley.dev as I would love to see it in action.
+
+## How to use
 
 ### Server
 
@@ -116,3 +116,7 @@ You need to add our embed on your side to truffle here is the url https://truffl
 
 You are now done setting this up and are good to use it.
 Have fun.
+
+## Future plans
+
+Currently the reason you need to host the server is because of cost. Unfortunatley hosting costs money especially when talking about streamers. Each stream can have thousands of people sending inputs per second and scale that up to multiple streamers thats a big number that costs a lot of money. For the scope of the truffle hackathon I didn't want to make anything paid which is why I chose the route of needing streamers to host it. Since this is a beta, if there is interest and or actual usage of truffle-plays I will consider building this out so you don't need to host and further streamlining the process for both the user and streamer.
