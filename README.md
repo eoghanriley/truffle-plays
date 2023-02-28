@@ -122,4 +122,4 @@ Have fun.
 
 ## Future plans
 
-Currently the reason you need to host the server is because of cost. Unfortunatley hosting costs money especially when talking about streamers. Each stream can have thousands of people sending inputs per second and scale that up to multiple streamers thats a big number that costs a lot of money. For the scope of the truffle hackathon I didn't want to make anything paid which is why I chose the route of needing streamers to host it. Since this is a alpha, if there is interest I will consider building this out so you don't need to host and further streamlining the process for both the user and streamer.
+This is currently an alpha for the truffle hackathon and to also gauge interest, which is why you need to self host it. If there is some interest in this project then I plan on investing the time and fully fledging this out to an easy to use platform for streamers.
