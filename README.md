@@ -122,4 +122,4 @@ Have fun.
 
 ## Future plans
 
-This is currently an alpha for the truffle hackathon and to also gauge interest, which is why you need to self host it. If there is some interest in this project then I plan on investing the time and fully fledging this out to an easy to use platform for streamers.
+This is currently an alpha for the truffle hackathon and to also gauge interest, which is why you need to self host it. If there is some interest in this project then I plan on investing the time and fully fledging this out to be an easy to use, all in one platform for streamers.
