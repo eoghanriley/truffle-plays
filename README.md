@@ -23,6 +23,7 @@ https://github.com/eoghanriley/truffle-plays/blob/main/keymap.png
 ## Contact
 
 If you have any issues in setting it up, getting the hosting to work or find any bugs you can either create an issue here on github or email me at truffle@eoghanriley.dev
+If you would like to use this but find the hosting part too complicated email and I can sort you out with it.
 If you find a security issue ONLY send it truffle@eoghanriley.dev and please do it promptly so it can be fixed.
 If you use this shoot me and email at truffle@eoghanriley.dev as I would love to see it in action.
 Lastly, if you work at truffle and want me to change the name I completley understand and just shoot me an email.
