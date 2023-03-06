@@ -1,11 +1,11 @@
-use axum::{extract, routing::post, Json, Router};
-use redis::Commands;
-use redis::RedisResult;
+use std::sync::{Arc, Mutex};
+
+use axum::{extract, extract::State, routing::post, Json, Router};
+use rustis::{client::Client, commands::ListCommands};
 use serde::{Deserialize, Serialize};
-use std::num::NonZeroUsize;
 
 #[derive(Deserialize, Debug)]
-struct Body {
+struct Viewer {
     org_id: String,
     input: String,
     stream: String,
@@ -23,32 +23,32 @@ struct StreamerRes {
     input: String,
 }
 
-async fn shift(extract::Json(payload): extract::Json<StreamerReq>) -> Json<StreamerRes> {
-    let client = redis::Client::open("redis://127.0.0.1:7001").unwrap();
-    let mut con = client.get_connection().unwrap();
-
-    let res = StreamerRes {
-        input: redis::cmd("RPOP")
-            .arg(payload.stream)
-            .query(&mut con)
-            .unwrap(),
-    };
-
-    Json(res)
+struct AppState {
+    redis_client: Client,
 }
 
-async fn push(extract::Json(payload): extract::Json<Body>) {
-    let client = redis::Client::open("redis://127.0.0.1:7001").unwrap();
-    let mut con = client.get_connection().unwrap();
+async fn shift(
+    State(mut state): State<Client>,
+    extract::Json(payload): extract::Json<StreamerReq>,
+) {
+    let e: Vec<String> = state.rpop(payload.stream, 10).await.unwrap();
 
-    let _: () = con.lpush(payload.stream, payload.input).unwrap();
+    println!("{:?}", e);
+}
+
+#[axum_macros::debug_handler]
+async fn push(State(mut state): State<Client>, extract::Json(payload): extract::Json<Viewer>) {
+    let _ = state.lpush(payload.stream, payload.input).await.unwrap();
 }
 
 #[tokio::main]
 async fn main() {
+    let mut client = Client::connect("redis://127.0.0.1:7001").await.unwrap();
+
     let app = Router::new()
         .route("/shift", post(shift))
-        .route("/push", post(push));
+        .route("/push", post(push))
+        .with_state(client);
 
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())
