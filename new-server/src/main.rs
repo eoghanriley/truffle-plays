@@ -1,7 +1,6 @@
-use std::sync::{Arc, Mutex};
-
 use axum::{extract, extract::State, routing::post, Json, Router};
-use rustis::{client::Client, commands::ListCommands};
+use dotenv_codegen::dotenv;
+use rustis::{client::Client, commands::ListCommands, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
@@ -20,20 +19,15 @@ struct StreamerReq {
 
 #[derive(Deserialize, Serialize, Debug)]
 struct StreamerRes {
-    input: String,
-}
-
-struct AppState {
-    redis_client: Client,
+    input: Vec<String>,
 }
 
 async fn shift(
     State(mut state): State<Client>,
     extract::Json(payload): extract::Json<StreamerReq>,
-) {
-    let e: Vec<String> = state.rpop(payload.stream, 10).await.unwrap();
-
-    println!("{:?}", e);
+) -> Json<StreamerRes> {
+    let res: Vec<String> = state.rpop(payload.stream, 10).await.unwrap();
+    Json(StreamerRes { input: res })
 }
 
 #[axum_macros::debug_handler]
@@ -42,8 +36,10 @@ async fn push(State(mut state): State<Client>, extract::Json(payload): extract::
 }
 
 #[tokio::main]
-async fn main() {
-    let mut client = Client::connect("redis://127.0.0.1:7001").await.unwrap();
+async fn main() -> Result<()> {
+    let redis_url = dotenv!("REDIS_URL");
+
+    let client = Client::connect(redis_url).await?;
 
     let app = Router::new()
         .route("/shift", post(shift))
@@ -54,4 +50,6 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+
+    Ok(())
 }
