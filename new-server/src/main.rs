@@ -59,7 +59,7 @@ async fn push(State(mut state): State<AppState>, extract::Json(payload): extract
 }
 
 #[axum_macros::debug_handler]
-async fn streamer_register(
+async fn register_streamer(
     State(state): State<AppState>,
     extract::Json(payload): extract::Json<Streamer>,
 ) {
@@ -73,7 +73,7 @@ async fn streamer_register(
         .execute(&state.db_pool).await.unwrap();
 }
 
-async fn streamer_get(State(state): State<AppState>) -> Json<Streamer> {
+async fn get_streamer(State(state): State<AppState>) -> Json<Streamer> {
     let x = sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE id = ?")
         .bind(1)
         .fetch_one(&state.db_pool)
@@ -85,7 +85,6 @@ async fn streamer_get(State(state): State<AppState>) -> Json<Streamer> {
 
 async fn migrate(db_pool: &SqlitePool) {
     let schema = read_to_string("src/schema.sql");
-    println!("{}", read_to_string("src/schema.sql").await.unwrap());
     sqlx::query(&schema.await.unwrap())
         .execute(db_pool)
         .await
@@ -108,8 +107,8 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/shift", post(shift))
         .route("/push", post(push))
-        .route("/register", post(streamer_register))
-        .route("/get", get(streamer_get))
+        .route("/register", post(register_streamer))
+        .route("/get", get(get_streamer))
         .with_state(AppState {
             redis_client,
             db_pool,
