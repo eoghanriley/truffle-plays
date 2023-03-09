@@ -1,0 +1,10 @@
+CREATE TABLE
+  IF NOT EXISTS streamers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    stream TEXT NOT NULL,
+    api_token TEXT NOT NULL UNIQUE,
+    donater INTEGER NOT NULL DEFAULT 0,
+    active_stream INTEGER NOT NULL DEFAULT 0
+  )

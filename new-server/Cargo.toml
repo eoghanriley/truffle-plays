@@ -13,4 +13,5 @@ dotenv = "0.15.0"
 dotenv_codegen = "0.15.0"
 rustis = { version = "0.8.3", features = ["tokio-tls", "redis-json"]}
 serde = { version = "1.0.152", features = ["derive"] }
+sqlx = { version = "0.6.2", features = ["runtime-actix-rustls", "sqlite"] }
 tokio = { version = "1.25.0", features = ["full"] }
