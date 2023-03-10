@@ -1,9 +1,14 @@
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2,
+};
 use axum::{extract, extract::State, routing::get, routing::post, Json, Router};
 use rustis::{client::Client, commands::ListCommands, Result};
 use serde::{Deserialize, Serialize};
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use std::env;
 use tokio::fs::read_to_string;
+use uuid::{uuid, Uuid};
 
 #[derive(Deserialize, Debug)]
 struct Viewer {
@@ -14,9 +19,7 @@ struct Viewer {
 
 #[derive(Deserialize, Debug)]
 struct StreamerReq {
-    org_id: String,
-    password: String,
-    stream: String,
+    api_token: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -45,7 +48,14 @@ async fn shift(
     State(mut state): State<AppState>,
     extract::Json(payload): extract::Json<StreamerReq>,
 ) -> Json<StreamerRes> {
-    let res: Vec<String> = state.redis_client.rpop(payload.stream, 10).await.unwrap();
+    let streamer =
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE api_token = ? LIMIT 1")
+            .bind(payload.api_token)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap();
+
+    let res: Vec<String> = state.redis_client.rpop(streamer.stream, 10).await.unwrap();
     Json(StreamerRes { input: res })
 }
 
@@ -61,16 +71,29 @@ async fn push(State(mut state): State<AppState>, extract::Json(payload): extract
 #[axum_macros::debug_handler]
 async fn register_streamer(
     State(state): State<AppState>,
-    extract::Json(payload): extract::Json<Streamer>,
+    extract::Json(mut payload): extract::Json<Streamer>,
 ) {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    payload.password = argon2
+        .hash_password(payload.password.as_bytes(), &salt)
+        .unwrap()
+        .to_string();
+
+    payload.api_token =
+        Some(Uuid::new_v5(&Uuid::NAMESPACE_OID, Uuid::new_v4().as_bytes()).to_string());
+    println!("{:?}", payload);
+
     sqlx::query(
-        "INSERT INTO streamers (username, password, stream, api_token, donater) VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO streamers (username, password, stream, api_token) VALUES (?, ?, ?, ?)",
     )
-        .bind(payload.username)
-        .bind(payload.password).bind(payload.stream)
-        .bind(payload.api_token)
-        .bind(payload.donater)
-        .execute(&state.db_pool).await.unwrap();
+    .bind(payload.username)
+    .bind(payload.password)
+    .bind(payload.stream)
+    .bind(payload.api_token)
+    .execute(&state.db_pool)
+    .await
+    .unwrap();
 }
 
 async fn get_streamer(State(state): State<AppState>) -> Json<Streamer> {
