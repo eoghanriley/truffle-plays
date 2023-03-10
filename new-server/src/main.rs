@@ -44,6 +44,8 @@ struct AppState {
     db_pool: SqlitePool,
 }
 
+// TODO: change unwraps to unwrap_or_else
+
 async fn shift(
     State(mut state): State<AppState>,
     extract::Json(payload): extract::Json<StreamerReq>,
@@ -55,17 +57,25 @@ async fn shift(
             .await
             .unwrap();
 
+    // TODO: Add check if stream is active
+
     let res: Vec<String> = state.redis_client.rpop(streamer.stream, 10).await.unwrap();
     Json(StreamerRes { input: res })
 }
 
 #[axum_macros::debug_handler]
 async fn push(State(mut state): State<AppState>, extract::Json(payload): extract::Json<Viewer>) {
+    // TODO: Add check if stream is active
+
     let _ = state
         .redis_client
         .lpush(payload.stream, payload.input)
         .await
         .unwrap();
+}
+
+fn gen_uuid() -> Uuid {
+    Uuid::new_v5(&Uuid::NAMESPACE_OID, Uuid::new_v4().as_bytes())
 }
 
 #[axum_macros::debug_handler]
@@ -80,9 +90,7 @@ async fn register_streamer(
         .unwrap()
         .to_string();
 
-    payload.api_token =
-        Some(Uuid::new_v5(&Uuid::NAMESPACE_OID, Uuid::new_v4().as_bytes()).to_string());
-    println!("{:?}", payload);
+    payload.api_token = Some(gen_uuid().to_string());
 
     sqlx::query(
         "INSERT INTO streamers (username, password, stream, api_token) VALUES (?, ?, ?, ?)",
@@ -97,7 +105,7 @@ async fn register_streamer(
 }
 
 async fn get_streamer(State(state): State<AppState>) -> Json<Streamer> {
-    let x = sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE id = ?")
+    let x = sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE id = ? LIMIT 1")
         .bind(1)
         .fetch_one(&state.db_pool)
         .await
