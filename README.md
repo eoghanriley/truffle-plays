@@ -26,11 +26,10 @@ If you have any issues in setting it up, getting the hosting to work or find any
 If you would like to use this but find the hosting part too complicated email and I can sort you out with it.
 If you find a security issue ONLY send it truffle@eoghanriley.dev and please do it promptly so it can be fixed.
 If you use this shoot me and email at truffle@eoghanriley.dev as I would love to see it in action.
-Lastly, if you work at truffle and want me to change the name I completley understand and just shoot me an email.
 
 ## How to use
 
-Currently truffle-plays is in alpha which is why there is the whole hosting setup. If you want to know about the future of the project you can skip to the end of this guide to see where I talk about the future plans of truffle-plays
+Currently truffle-plays is in alpha which is why there is the whole hosting setup.
 
 ### Server
 
@@ -123,4 +122,4 @@ Have fun.
 
 ## Future plans
 
-This is currently an alpha for the truffle hackathon and to also gauge interest, which is why you need to self host it. If there is some interest in this project then I plan on investing the time and fully fledging this out to be an easy to use, all in one platform for streamers.
+A fully improved version that does all the hard work for you is coming soon!
