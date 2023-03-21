@@ -1,14 +1,14 @@
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    password_hash::{rand_core::OsRng, PasswordHasher, Salt, SaltString},
     Argon2,
 };
-use axum::{extract, extract::State, routing::get, routing::post, Json, Router};
+use axum::{extract, extract::State, routing::post, Json, Router};
 use rustis::{client::Client, commands::ListCommands, Result};
 use serde::{Deserialize, Serialize};
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use std::env;
 use tokio::fs::read_to_string;
-use uuid::{uuid, Uuid};
+use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
 struct Viewer {
@@ -42,6 +42,12 @@ struct Streamer {
 struct AppState {
     redis_client: Client,
     db_pool: SqlitePool,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct AppRes<'a, T> {
+    body: Option<T>,
+    error: Option<&'a str>,
 }
 
 // TODO: change unwraps to unwrap_or_else
@@ -85,6 +91,7 @@ async fn register_streamer(
 ) {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
+
     payload.password = argon2
         .hash_password(payload.password.as_bytes(), &salt)
         .unwrap()
@@ -104,14 +111,52 @@ async fn register_streamer(
     .unwrap();
 }
 
-async fn get_streamer(State(state): State<AppState>) -> Json<Streamer> {
-    let x = sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE id = ? LIMIT 1")
-        .bind(1)
+fn verify_pass(hash: &str, pass: &str) -> bool {
+    let salt = hash.split("$").collect::<Vec<&str>>()[4];
+
+    let pass = Argon2::default()
+        .hash_password(pass.as_bytes(), Salt::from_b64(salt).unwrap())
+        .unwrap();
+
+    if pass.to_string() == hash {
+        return true;
+    }
+
+    return false;
+}
+
+#[axum_macros::debug_handler]
+async fn regen_token(
+    State(state): State<AppState>,
+    extract::Json(payload): extract::Json<Streamer>,
+) -> Json<AppRes<'static, String>> {
+    let streamer = sqlx::query_as::<_, Streamer>(
+        "SELECT * FROM streamers WHERE username = ? AND stream = ? LIMIT 1",
+    )
+    .bind(payload.username)
+    .bind(payload.stream)
+    .fetch_one(&state.db_pool)
+    .await
+    .unwrap();
+
+    if verify_pass(&streamer.password, &payload.password) == false {
+        return Json(AppRes {
+            body: None,
+            error: Some("Error with password validation"),
+        });
+    }
+
+    let new_token = gen_uuid().to_string();
+    sqlx::query("UPDATE streamers SET api_token = ? WHERE id = ? RETURNING api_token")
+        .bind(&new_token)
+        .bind(streamer.id.unwrap())
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
-
-    Json(x)
+    Json(AppRes {
+        body: Some(new_token),
+        error: None,
+    })
 }
 
 async fn migrate(db_pool: &SqlitePool) {
@@ -139,7 +184,7 @@ async fn main() -> Result<()> {
         .route("/shift", post(shift))
         .route("/push", post(push))
         .route("/register", post(register_streamer))
-        .route("/get", get(get_streamer))
+        .route("/regen_token", post(regen_token))
         .with_state(AppState {
             redis_client,
             db_pool,
