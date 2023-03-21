@@ -50,7 +50,7 @@ struct AppRes<'a, T> {
     error: Option<&'a str>,
 }
 
-// TODO: change unwraps to unwrap_or_else
+// TODO: change unwraps to expect
 
 async fn shift(
     State(mut state): State<AppState>,
