@@ -110,7 +110,7 @@ fn gen_uuid() -> Uuid {
 async fn register_streamer(
     State(state): State<AppState>,
     extract::Json(mut payload): extract::Json<Streamer>,
-) {
+) -> extract::Json<AppRes<'static, String>> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
 
@@ -127,10 +127,15 @@ async fn register_streamer(
     .bind(payload.username)
     .bind(payload.password)
     .bind(payload.stream)
-    .bind(payload.api_token)
+    .bind(&payload.api_token)
     .execute(&state.db_pool)
     .await
     .unwrap();
+
+    Json(AppRes {
+        body: payload.api_token,
+        error: None,
+    })
 }
 
 fn verify_pass(hash: &str, pass: &str) -> bool {
@@ -202,6 +207,28 @@ async fn toggle_stream(
     .unwrap();
 }
 
+async fn login(
+    State(state): State<AppState>,
+    extract::Json(payload): extract::Json<AppReq>,
+) -> extract::Json<AppRes<'static, Streamer>> {
+    let mut streamer =
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE api_token = ? LIMIT 1")
+            .bind(&payload.api_token)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap();
+
+    streamer.id = None;
+    streamer.password = "".to_string();
+    streamer.api_token = None;
+    streamer.donater = None;
+
+    Json(AppRes {
+        body: Some(streamer),
+        error: None,
+    })
+}
+
 async fn migrate(db_pool: &SqlitePool) {
     let schema = read_to_string("src/schema.sql");
     sqlx::query(&schema.await.unwrap())
@@ -229,6 +256,7 @@ async fn main() -> Result<()> {
         .route("/register", post(register_streamer))
         .route("/regen_token", post(regen_token))
         .route("/toggle_stream", post(toggle_stream))
+        .route("/login", post(login))
         .with_state(AppState {
             redis_client,
             db_pool,

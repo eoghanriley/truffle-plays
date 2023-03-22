@@ -1,6 +1,8 @@
 # Release
 
-- [ ] Login
+- [x] Login
+- [ ] Ratelimiting :(
+- [ ] Hashing api and session tokens
 - [ ] Update Streamer client
 - [ ] Update truffle client
 - [ ] Streamer site
