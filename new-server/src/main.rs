@@ -63,7 +63,12 @@ async fn shift(
             .await
             .unwrap();
 
-    // TODO: Add check if stream is active
+    if streamer.active_stream.unwrap() == false {
+        return Json(AppRes {
+            body: None,
+            error: Some("Stream not active"),
+        });
+    }
 
     let res: Vec<String> = state.redis_client.rpop(streamer.stream, 10).await.unwrap();
     Json(AppRes {
@@ -74,7 +79,16 @@ async fn shift(
 
 #[axum_macros::debug_handler]
 async fn push(State(mut state): State<AppState>, extract::Json(payload): extract::Json<Viewer>) {
-    // TODO: Add check if stream is active
+    let streamer =
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE stream = ? LIMIT 1")
+            .bind(&payload.stream)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap();
+
+    if streamer.active_stream.unwrap() == false {
+        return;
+    }
 
     let _ = state
         .redis_client
