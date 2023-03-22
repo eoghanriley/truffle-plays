@@ -3,6 +3,7 @@ CREATE TABLE
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
+    session_token TEXT NOT NULL,
     stream TEXT NOT NULL UNIQUE,
     api_token TEXT NOT NULL UNIQUE,
     donater INTEGER NOT NULL DEFAULT 0,

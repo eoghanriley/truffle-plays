@@ -1,6 +1,8 @@
 # Release
 
-- [ ] Login
+- [x] Login
+- [ ] Ratelimiting :(
+- [ ] Hashing api and session tokens
 - [ ] Update Streamer client
 - [ ] Update truffle client
 - [ ] Streamer site
@@ -19,3 +21,5 @@
 - [ ] Automating builds
 - [ ] Ban list
 - [ ] Reading chat for text inputs
+- [ ] Fix AppReq
+- [ ] Look into changing AppRes to error possibly an anyhow error
