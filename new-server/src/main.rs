@@ -55,7 +55,7 @@ struct AppRes<'a, T> {
 async fn shift(
     State(mut state): State<AppState>,
     extract::Json(payload): extract::Json<StreamerReq>,
-) -> Json<StreamerRes> {
+) -> Json<AppRes<'static, Vec<String>>> {
     let streamer =
         sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE api_token = ? LIMIT 1")
             .bind(payload.api_token)
@@ -66,7 +66,10 @@ async fn shift(
     // TODO: Add check if stream is active
 
     let res: Vec<String> = state.redis_client.rpop(streamer.stream, 10).await.unwrap();
-    Json(StreamerRes { input: res })
+    Json(AppRes {
+        body: Some(res),
+        error: None,
+    })
 }
 
 #[axum_macros::debug_handler]
