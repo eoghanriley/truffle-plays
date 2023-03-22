@@ -32,7 +32,6 @@ struct Streamer {
     id: Option<i32>,
     username: String,
     password: String,
-    session_token: Option<String>,
     stream: String,
     api_token: Option<String>,
     donater: Option<bool>,
@@ -51,16 +50,9 @@ struct AppRes<'a, T> {
     error: Option<&'a str>,
 }
 
-// TODO: fix this
 #[derive(Deserialize, Serialize, Debug)]
 struct AppReq {
     api_token: String,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct Login {
-    username: String,
-    password: String,
 }
 
 // TODO: change unwraps to expect
@@ -118,7 +110,7 @@ fn gen_uuid() -> Uuid {
 async fn register_streamer(
     State(state): State<AppState>,
     extract::Json(mut payload): extract::Json<Streamer>,
-) -> extract::Json<AppRes<'static, String>> {
+) {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
 
@@ -128,24 +120,17 @@ async fn register_streamer(
         .to_string();
 
     payload.api_token = Some(gen_uuid().to_string());
-    payload.session_token = Some(gen_uuid().to_string());
 
     sqlx::query(
-        "INSERT INTO streamers (username, password, session_token, stream, api_token) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO streamers (username, password, stream, api_token) VALUES (?, ?, ?, ?)",
     )
     .bind(payload.username)
     .bind(payload.password)
-    .bind(&payload.session_token)
     .bind(payload.stream)
     .bind(payload.api_token)
     .execute(&state.db_pool)
     .await
     .unwrap();
-
-    Json(AppRes {
-        body: payload.session_token,
-        error: None,
-    })
 }
 
 fn verify_pass(hash: &str, pass: &str) -> bool {
@@ -217,40 +202,6 @@ async fn toggle_stream(
     .unwrap();
 }
 
-async fn login(
-    State(state): State<AppState>,
-    extract::Json(payload): extract::Json<Login>,
-) -> extract::Json<AppRes<'static, String>> {
-    let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = ? LIMIT 1")
-            .bind(&payload.username)
-            .fetch_one(&state.db_pool)
-            .await;
-
-    if streamer.is_err() {
-        return Json(AppRes {
-            body: None,
-            error: Some("Error with validation"),
-        });
-    }
-
-    let streamer = streamer.unwrap();
-
-    if verify_pass(&streamer.password, &payload.password) == false {
-        return Json(AppRes {
-            body: None,
-            error: Some("Error with validation"),
-        });
-    }
-
-    let session_token = gen_uuid().to_string();
-
-    Json(AppRes {
-        body: Some(session_token),
-        error: None,
-    })
-}
-
 async fn migrate(db_pool: &SqlitePool) {
     let schema = read_to_string("src/schema.sql");
     sqlx::query(&schema.await.unwrap())
@@ -278,7 +229,6 @@ async fn main() -> Result<()> {
         .route("/register", post(register_streamer))
         .route("/regen_token", post(regen_token))
         .route("/toggle_stream", post(toggle_stream))
-        .route("/login", post(login))
         .with_state(AppState {
             redis_client,
             db_pool,
