@@ -50,6 +50,11 @@ struct AppRes<'a, T> {
     error: Option<&'a str>,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+struct AppReq {
+    api_token: String,
+}
+
 // TODO: change unwraps to expect
 
 async fn shift(
@@ -176,6 +181,27 @@ async fn regen_token(
     })
 }
 
+async fn toggle_stream(
+    State(state): State<AppState>,
+    extract::Json(payload): extract::Json<AppReq>,
+) {
+    let streamer =
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE api_token = ? LIMIT 1")
+            .bind(&payload.api_token)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap();
+
+    sqlx::query(
+        "UPDATE streamers SET active_stream = ? WHERE api_token = ? RETURNING active_stream",
+    )
+    .bind(!streamer.active_stream.unwrap())
+    .bind(payload.api_token)
+    .fetch_one(&state.db_pool)
+    .await
+    .unwrap();
+}
+
 async fn migrate(db_pool: &SqlitePool) {
     let schema = read_to_string("src/schema.sql");
     sqlx::query(&schema.await.unwrap())
@@ -202,6 +228,7 @@ async fn main() -> Result<()> {
         .route("/push", post(push))
         .route("/register", post(register_streamer))
         .route("/regen_token", post(regen_token))
+        .route("/toggle_stream", post(toggle_stream))
         .with_state(AppState {
             redis_client,
             db_pool,

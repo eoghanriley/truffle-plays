@@ -4,8 +4,8 @@
 - [ ] Update Streamer client
 - [ ] Update truffle client
 - [ ] Streamer site
-- [ ] Toggling stream activity
-- [ ] Checking if stream is active
+- [x] Toggling stream activity
+- [x] Checking if stream is active
 - [x] Use AppRes
 
 # Post Release
