@@ -2,7 +2,8 @@
 
 - [x] Login
 - [ ] Ratelimiting :(
-- [ ] Hashing api and session tokens
+- [x] Hashing api tokens
+- [ ] sqlx cli
 - [ ] Update Streamer client
 - [ ] Update truffle client
 - [ ] Streamer site

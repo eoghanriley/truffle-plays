@@ -17,11 +17,6 @@ struct Viewer {
     stream: String,
 }
 
-#[derive(Deserialize, Debug)]
-struct StreamerReq {
-    api_token: String,
-}
-
 #[derive(Deserialize, Serialize, Debug)]
 struct StreamerRes {
     input: Vec<String>,
@@ -53,20 +48,28 @@ struct AppRes<'a, T> {
 #[derive(Deserialize, Serialize, Debug)]
 struct AppReq {
     api_token: String,
+    username: String,
 }
 
 // TODO: change unwraps to expect
 
 async fn shift(
     State(mut state): State<AppState>,
-    extract::Json(payload): extract::Json<StreamerReq>,
+    extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, Vec<String>>> {
     let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE api_token = ? LIMIT 1")
-            .bind(payload.api_token)
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = ? LIMIT 1")
+            .bind(payload.username)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
+
+    if verify_hash(&streamer.api_token.unwrap(), &payload.api_token) == false {
+        return Json(AppRes {
+            body: None,
+            error: Some("Error with validation"),
+        });
+    }
 
     if streamer.active_stream.unwrap() == false {
         return Json(AppRes {
@@ -111,11 +114,19 @@ async fn register_streamer(
     State(state): State<AppState>,
     extract::Json(mut payload): extract::Json<Streamer>,
 ) -> extract::Json<AppRes<'static, String>> {
-    let salt = SaltString::generate(&mut OsRng);
+    let password_salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
 
     payload.password = argon2
-        .hash_password(payload.password.as_bytes(), &salt)
+        .hash_password(payload.password.as_bytes(), &password_salt)
+        .unwrap()
+        .to_string();
+
+    let unhashed_token = gen_uuid().to_string();
+    let token_salt = SaltString::generate(&mut OsRng);
+
+    let hashed_token = argon2
+        .hash_password(&unhashed_token.as_bytes(), &token_salt)
         .unwrap()
         .to_string();
 
@@ -127,25 +138,25 @@ async fn register_streamer(
     .bind(payload.username)
     .bind(payload.password)
     .bind(payload.stream)
-    .bind(&payload.api_token)
+    .bind(hashed_token)
     .execute(&state.db_pool)
     .await
     .unwrap();
 
     Json(AppRes {
-        body: payload.api_token,
+        body: Some(unhashed_token),
         error: None,
     })
 }
 
-fn verify_pass(hash: &str, pass: &str) -> bool {
-    let salt = hash.split("$").collect::<Vec<&str>>()[4];
+fn verify_hash(hashed_value: &str, unhashed_value: &str) -> bool {
+    let salt = hashed_value.split("$").collect::<Vec<&str>>()[4];
 
     let pass = Argon2::default()
-        .hash_password(pass.as_bytes(), Salt::from_b64(salt).unwrap())
+        .hash_password(unhashed_value.as_bytes(), Salt::from_b64(salt).unwrap())
         .unwrap();
 
-    if pass.to_string() == hash {
+    if pass.to_string() == hashed_value {
         return true;
     }
 
@@ -166,22 +177,31 @@ async fn regen_token(
     .await
     .unwrap();
 
-    if verify_pass(&streamer.password, &payload.password) == false {
+    if verify_hash(&streamer.password, &payload.password) == false {
         return Json(AppRes {
             body: None,
             error: Some("Error with password validation"),
         });
     }
 
-    let new_token = gen_uuid().to_string();
+    let unhashed_token = gen_uuid().to_string();
+
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+
+    let hashed_token = argon2
+        .hash_password(&unhashed_token.as_bytes(), &salt)
+        .unwrap()
+        .to_string();
+
     sqlx::query("UPDATE streamers SET api_token = ? WHERE id = ? RETURNING api_token")
-        .bind(&new_token)
+        .bind(hashed_token)
         .bind(streamer.id.unwrap())
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
     Json(AppRes {
-        body: Some(new_token),
+        body: Some(unhashed_token),
         error: None,
     })
 }
@@ -189,22 +209,34 @@ async fn regen_token(
 async fn toggle_stream(
     State(state): State<AppState>,
     extract::Json(payload): extract::Json<AppReq>,
-) {
+) -> Json<AppRes<'static, bool>> {
     let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE api_token = ? LIMIT 1")
-            .bind(&payload.api_token)
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = ? LIMIT 1")
+            .bind(&payload.username)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
 
+    if verify_hash(&streamer.api_token.unwrap(), &payload.api_token) == false {
+        return Json(AppRes {
+            body: None,
+            error: Some("Error with validation"),
+        });
+    }
+
     sqlx::query(
-        "UPDATE streamers SET active_stream = ? WHERE api_token = ? RETURNING active_stream",
+        "UPDATE streamers SET active_stream = ? WHERE username = ? RETURNING active_stream",
     )
-    .bind(!streamer.active_stream.unwrap())
-    .bind(payload.api_token)
+    .bind(!&streamer.active_stream.unwrap())
+    .bind(payload.username)
     .fetch_one(&state.db_pool)
     .await
     .unwrap();
+
+    Json(AppRes {
+        body: Some(!streamer.active_stream.unwrap()),
+        error: None,
+    })
 }
 
 async fn login(
