@@ -3,7 +3,8 @@ use argon2::{
     Argon2,
 };
 use axum::{extract, extract::State, routing::post, Json, Router};
-use rustis::{client::Client, commands::ListCommands, Result};
+use chrono::{DateTime, Utc};
+use rustis::{client::Client, commands::ListCommands, commands::StringCommands, Result};
 use serde::{Deserialize, Serialize};
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use std::env;
@@ -86,7 +87,42 @@ async fn shift(
 }
 
 #[axum_macros::debug_handler]
-async fn push(State(mut state): State<AppState>, extract::Json(payload): extract::Json<Viewer>) {
+async fn push(
+    State(mut state): State<AppState>,
+    extract::Json(payload): extract::Json<Viewer>,
+) -> Json<AppRes<'static, &'static str>> {
+    let last_push: Option<String> = state
+        .redis_client
+        .get(payload.org_id.clone())
+        .await
+        .unwrap();
+
+    if last_push.is_some() {
+        if (Utc::now().time()
+            - last_push
+                .clone()
+                .unwrap()
+                .parse::<DateTime<Utc>>()
+                .unwrap()
+                .time())
+        .num_milliseconds()
+            > 1000
+        {
+            println!("e")
+        } else {
+            return Json(AppRes {
+                body: None,
+                error: Some("Slow down. Too many requests"),
+            });
+        }
+    }
+
+    let _ = state
+        .redis_client
+        .set(payload.org_id, Utc::now().to_string())
+        .await
+        .unwrap();
+
     let streamer =
         sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE stream = ? LIMIT 1")
             .bind(&payload.stream)
@@ -95,7 +131,10 @@ async fn push(State(mut state): State<AppState>, extract::Json(payload): extract
             .unwrap();
 
     if streamer.active_stream.unwrap() == false {
-        return;
+        return Json(AppRes {
+            body: None,
+            error: Some("Stream not active"),
+        });
     }
 
     let _ = state
@@ -103,6 +142,11 @@ async fn push(State(mut state): State<AppState>, extract::Json(payload): extract
         .lpush(payload.stream, payload.input)
         .await
         .unwrap();
+
+    Json(AppRes {
+        body: Some("Success"),
+        error: None,
+    })
 }
 
 fn gen_uuid() -> Uuid {

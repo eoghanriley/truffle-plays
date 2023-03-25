@@ -1,7 +1,7 @@
 # Release
 
 - [x] Login
-- [ ] Ratelimiting :(
+- [x] Ratelimiting
 - [x] Hashing api tokens
 - [ ] sqlx cli
 - [ ] Update Streamer client
