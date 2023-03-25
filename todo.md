@@ -5,6 +5,7 @@
 - [x] Hashing api tokens
 - [ ] sqlx cli
 - [ ] Update Streamer client
+- [ ] openssl vulnerabilities
 - [ ] Update truffle client
 - [ ] Streamer site
 - [x] Toggling stream activity
