@@ -3,7 +3,7 @@
 - [x] Login
 - [x] Ratelimiting
 - [x] Hashing api tokens
-- [ ] sqlx cli
+- [x] sqlx cli
 - [ ] Update Streamer client
 - [ ] openssl vulnerabilities
 - [ ] Update truffle client

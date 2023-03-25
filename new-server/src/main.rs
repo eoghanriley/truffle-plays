@@ -8,7 +8,6 @@ use rustis::{client::Client, commands::ListCommands, commands::StringCommands, R
 use serde::{Deserialize, Serialize};
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use std::env;
-use tokio::fs::read_to_string;
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
@@ -305,14 +304,6 @@ async fn login(
     })
 }
 
-async fn migrate(db_pool: &SqlitePool) {
-    let schema = read_to_string("src/schema.sql");
-    sqlx::query(&schema.await.unwrap())
-        .execute(db_pool)
-        .await
-        .unwrap();
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv::dotenv().ok();
@@ -324,7 +315,7 @@ async fn main() -> Result<()> {
         .await
         .unwrap();
 
-    migrate(&db_pool).await;
+    sqlx::migrate!().run(&db_pool).await.unwrap();
 
     let app = Router::new()
         .route("/shift", post(shift))
