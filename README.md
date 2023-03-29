@@ -23,13 +23,13 @@ https://github.com/eoghanriley/truffle-plays/blob/main/keymap.png
 ## Contact
 
 If you have any issues in setting it up, getting the hosting to work or find any bugs you can either create an issue here on github or email me at truffle@eoghanriley.dev
+If you would like to use this but find the hosting part too complicated email and I can sort you out with it.
 If you find a security issue ONLY send it truffle@eoghanriley.dev and please do it promptly so it can be fixed.
 If you use this shoot me and email at truffle@eoghanriley.dev as I would love to see it in action.
-Lastly, if you work at truffle and want me to change the name I completley understand and just shoot me an email.
 
 ## How to use
 
-Currently truffle-plays is in alpha which is why there is the whole hosting setup. If you want to know about the future of the project you can skip to the end of this guide to see where I talk about the future plans of truffle-plays
+Currently truffle-plays is in alpha which is why there is the whole hosting setup.
 
 ### Server
 
@@ -122,4 +122,4 @@ Have fun.
 
 ## Future plans
 
-Currently the reason you need to host the server is because of cost. Unfortunatley hosting costs money especially when talking about streamers. Each stream can have thousands of people sending inputs per second and scale that up to multiple streamers thats a big number that costs a lot of money. For the scope of the truffle hackathon I didn't want to make anything paid which is why I chose the route of needing streamers to host it. Since this is a alpha, if there is interest I will consider building this out so you don't need to host and further streamlining the process for both the user and streamer.
+A fully improved version that does all the hard work for you is coming soon!
