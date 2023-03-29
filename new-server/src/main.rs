@@ -105,10 +105,8 @@ async fn push(
                 .unwrap()
                 .time())
         .num_milliseconds()
-            > 1000
+            < 1000
         {
-            println!("e")
-        } else {
             return Json(AppRes {
                 body: None,
                 error: Some("Slow down. Too many requests"),

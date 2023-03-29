@@ -28,10 +28,10 @@ pub struct Settings {
     pub y2: char,
 
     // Password to server GET
-    pub auth: String,
+    pub username: String,
+    pub api_token: String,
     // rate to poll server in milliseconds
     pub poll_rate: u64,
-    pub url: String,
 }
 
 pub fn init() -> Settings {

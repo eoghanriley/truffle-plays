@@ -4,7 +4,7 @@
 - [x] Ratelimiting
 - [x] Hashing api tokens
 - [x] sqlx cli
-- [ ] Update Streamer client
+- [x] Update Streamer client
 - [ ] openssl vulnerabilities
 - [ ] Update truffle client
 - [ ] Streamer site
@@ -23,3 +23,4 @@
 - [ ] Automating builds
 - [ ] Ban list
 - [ ] Reading chat for text inputs
+- [ ] Colored output

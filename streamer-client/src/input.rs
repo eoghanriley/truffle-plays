@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Input {
-    pub input: String,
+    pub body: Option<Vec<String>>,
+    pub error: Option<String>,
 }
 
 pub fn click(input: &str, enigo: &mut Enigo, settings: &Settings) {
@@ -34,9 +35,6 @@ pub fn click(input: &str, enigo: &mut Enigo, settings: &Settings) {
         "y2" => enigo.key_click(Key::Layout(settings.y2)),
 
         // Server errors
-        "waiting" => println!("Waiting for inputs to be sent to the server."),
-        "auth_error" => println!("There was in issue with the provided password."),
-
         &_ => println!("Unkown input `{:?}`", input),
     }
 }
