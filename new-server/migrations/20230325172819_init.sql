@@ -1,10 +1,10 @@
 CREATE TABLE
   IF NOT EXISTS streamers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    stream TEXT NOT NULL UNIQUE,
-    api_token TEXT NOT NULL UNIQUE,
-    donater INTEGER NOT NULL DEFAULT 0,
-    active_stream INTEGER NOT NULL DEFAULT 0
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    stream VARCHAR(255) NOT NULL UNIQUE,
+    api_token VARCHAR(255) NOT NULL UNIQUE,
+    donater BOOLEAN NOT NULL DEFAULT False,
+    active_stream BOOLEAN NOT NULL DEFAULT False
   )

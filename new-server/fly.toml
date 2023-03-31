@@ -6,6 +6,7 @@ kill_timeout = 5
 processes = []
 
 [env]
+  DATABASE_URL = "sqlite://///litefs/my.db"
 
 [experimental]
   auto_rollback = true
@@ -36,3 +37,7 @@ processes = []
     interval = "15s"
     restart_limit = 0
     timeout = "2s"
+
+[mounts]
+  source = "litefs"
+  destination = "/var/lib/litefs"

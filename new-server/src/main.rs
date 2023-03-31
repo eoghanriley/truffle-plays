@@ -6,7 +6,7 @@ use axum::{extract, extract::State, routing::post, Json, Router};
 use chrono::{DateTime, Utc};
 use rustis::{client::Client, commands::ListCommands, commands::StringCommands, Result};
 use serde::{Deserialize, Serialize};
-use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
+use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::env;
 use uuid::Uuid;
 
@@ -36,7 +36,7 @@ struct Streamer {
 #[derive(Clone)]
 struct AppState {
     redis_client: Client,
-    db_pool: SqlitePool,
+    db_pool: PgPool,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -308,8 +308,9 @@ async fn main() -> Result<()> {
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
 
     let redis_client = Client::connect(redis_url).await?;
-    let db_pool = SqlitePoolOptions::new()
-        .connect("sqlite://sqlite.db")
+    let db_pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
         .unwrap();
 
