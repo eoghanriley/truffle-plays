@@ -2,7 +2,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, Salt, SaltString},
     Argon2,
 };
-use axum::{extract, extract::State, routing::post, Json, Router};
+use axum::{extract, extract::State, routing::get, routing::post, Json, Router};
 use chrono::{DateTime, Utc};
 use rustis::{client::Client, commands::ListCommands, commands::StringCommands, Result};
 use serde::{Deserialize, Serialize};
@@ -51,6 +51,16 @@ struct AppReq {
     username: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
+struct Stream {
+    stream: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
+struct Streams {
+    names: Vec<Stream>,
+}
+
 // TODO: change unwraps to expect
 
 async fn shift(
@@ -58,7 +68,7 @@ async fn shift(
     extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, Vec<String>>> {
     let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = ? LIMIT 1")
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = $1 LIMIT 1")
             .bind(payload.username)
             .fetch_one(&state.db_pool)
             .await
@@ -121,7 +131,7 @@ async fn push(
         .unwrap();
 
     let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE stream = ? LIMIT 1")
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE stream = $1 LIMIT 1")
             .bind(&payload.stream)
             .fetch_one(&state.db_pool)
             .await
@@ -174,7 +184,7 @@ async fn register_streamer(
     payload.api_token = Some(gen_uuid().to_string());
 
     sqlx::query(
-        "INSERT INTO streamers (username, password, stream, api_token) VALUES (?, ?, ?, ?)",
+        "INSERT INTO streamers (username, password, stream, api_token) VALUES ($1, $2, $3, $4)",
     )
     .bind(payload.username)
     .bind(payload.password)
@@ -210,7 +220,7 @@ async fn regen_token(
     extract::Json(payload): extract::Json<Streamer>,
 ) -> Json<AppRes<'static, String>> {
     let streamer = sqlx::query_as::<_, Streamer>(
-        "SELECT * FROM streamers WHERE username = ? AND stream = ? LIMIT 1",
+        "SELECT * FROM streamers WHERE username = $1 AND stream = $2 LIMIT 1",
     )
     .bind(payload.username)
     .bind(payload.stream)
@@ -235,7 +245,7 @@ async fn regen_token(
         .unwrap()
         .to_string();
 
-    sqlx::query("UPDATE streamers SET api_token = ? WHERE id = ? RETURNING api_token")
+    sqlx::query("UPDATE streamers SET api_token = $1 WHERE id = $2 RETURNING api_token")
         .bind(hashed_token)
         .bind(streamer.id.unwrap())
         .fetch_one(&state.db_pool)
@@ -252,7 +262,7 @@ async fn toggle_stream(
     extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, bool>> {
     let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = ? LIMIT 1")
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = $1 LIMIT 1")
             .bind(&payload.username)
             .fetch_one(&state.db_pool)
             .await
@@ -266,7 +276,7 @@ async fn toggle_stream(
     }
 
     sqlx::query(
-        "UPDATE streamers SET active_stream = ? WHERE username = ? RETURNING active_stream",
+        "UPDATE streamers SET active_stream = $1 WHERE username = $2 RETURNING active_stream",
     )
     .bind(!&streamer.active_stream.unwrap())
     .bind(payload.username)
@@ -285,7 +295,7 @@ async fn login(
     extract::Json(payload): extract::Json<AppReq>,
 ) -> extract::Json<AppRes<'static, Streamer>> {
     let mut streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE api_token = ? LIMIT 1")
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE api_token = $1 LIMIT 1")
             .bind(&payload.api_token)
             .fetch_one(&state.db_pool)
             .await
@@ -299,6 +309,17 @@ async fn login(
     Json(AppRes {
         body: Some(streamer),
         error: None,
+    })
+}
+
+async fn get_active_streamers(State(state): State<AppState>) -> extract::Json<Streams> {
+    Json(Streams {
+        names: sqlx::query_as::<_, Stream>(
+            "SELECT stream FROM streamers where active_stream = True",
+        )
+        .fetch_all(&state.db_pool)
+        .await
+        .unwrap(),
     })
 }
 
@@ -323,6 +344,7 @@ async fn main() -> Result<()> {
         .route("/regen_token", post(regen_token))
         .route("/toggle_stream", post(toggle_stream))
         .route("/login", post(login))
+        .route("/get_streams", get(get_active_streamers))
         .with_state(AppState {
             redis_client,
             db_pool,
