@@ -4,7 +4,12 @@ use argon2::{
 };
 use axum::{extract, extract::State, routing::get, routing::post, Json, Router};
 use chrono::{DateTime, Utc};
-use rustis::{client::Client, commands::ListCommands, commands::StringCommands, Result};
+use rustis::{
+    client::Client,
+    commands::StringCommands,
+    commands::{GenericCommands, ListCommands},
+    Result,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::env;
@@ -258,10 +263,10 @@ async fn regen_token(
 }
 
 async fn toggle_stream(
-    State(state): State<AppState>,
+    State(mut state): State<AppState>,
     extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, bool>> {
-    let streamer =
+    let mut streamer =
         sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = $1 LIMIT 1")
             .bind(&payload.username)
             .fetch_one(&state.db_pool)
@@ -275,14 +280,20 @@ async fn toggle_stream(
         });
     }
 
+    streamer.active_stream = Some(!streamer.active_stream.unwrap());
+
     sqlx::query(
         "UPDATE streamers SET active_stream = $1 WHERE username = $2 RETURNING active_stream",
     )
-    .bind(!&streamer.active_stream.unwrap())
+    .bind(&streamer.active_stream.unwrap())
     .bind(payload.username)
     .fetch_one(&state.db_pool)
     .await
     .unwrap();
+
+    if &streamer.active_stream.unwrap() == &false {
+        let _ = state.redis_client.del(streamer.stream);
+    }
 
     Json(AppRes {
         body: Some(!streamer.active_stream.unwrap()),
