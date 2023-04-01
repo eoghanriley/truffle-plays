@@ -1,11 +1,25 @@
 <script lang="ts">
-  import { embed } from "@trufflehq/sdk";
+  import { embed, user as userClient } from "@trufflehq/sdk";
+  import { onMount } from "svelte";
 
   embed.setSize("400px", "300px");
   embed.setPosition("20px", "100px");
   if (!document.referrer) {
     embed.hide();
   }
+
+  let userId;
+  onMount(() => {
+    let user = userClient.observable.subscribe({
+      next: (user) => {
+        userId = user.id;
+      },
+      error: (error) => {
+        console.error(error);
+      },
+      complete: () => {},
+    });
+  });
 
   let url = "http://localhost:3000/push";
   let toggled = true;
@@ -17,7 +31,11 @@
         headers: {
           "Content-type": "application/json",
         },
-        body: JSON.stringify({ org_id: "1", input: key, stream: "testStream" }),
+        body: JSON.stringify({
+          org_id: userId,
+          input: key,
+          stream: "testStream",
+        }),
       }).then((response) => {
         return response.json();
       });
