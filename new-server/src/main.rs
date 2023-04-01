@@ -330,7 +330,7 @@ async fn main() -> Result<()> {
 
     let redis_client = Client::connect(redis_url).await?;
     let db_pool = PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(300)
         .connect(&env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
         .unwrap();
