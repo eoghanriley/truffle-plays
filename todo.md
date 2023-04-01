@@ -5,7 +5,6 @@
 - [x] Hashing api tokens
 - [x] sqlx cli
 - [x] Update Streamer client
-- [ ] openssl vulnerabilities
 - [ ] Update truffle client
 - [ ] Streamer site
 - [x] Toggling stream activity
@@ -24,3 +23,5 @@
 - [ ] Ban list
 - [ ] Reading chat for text inputs
 - [ ] Colored output
+- [ ] Streamer client update
+- [ ] Consolidate streamer dashboard to streamer client?
