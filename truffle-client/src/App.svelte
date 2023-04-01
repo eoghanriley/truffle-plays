@@ -8,24 +8,37 @@
     embed.hide();
   }
 
-  let userId;
-  onMount(() => {
-    let user = userClient.observable.subscribe({
-      next: (user) => {
-        userId = user.id;
-      },
-      error: (error) => {
-        console.error(error);
-      },
-      complete: () => {},
-    });
+  const getStreamers = async () => {
+    const res = await fetch("http://localhost:3000/get_streams").then(
+      async (response) => {
+        return await response.json();
+      }
+    );
+    activeStreamers = res.names;
+  };
+
+  let userId = "1";
+  let activeStreamers;
+  onMount(async () => {
+    //let user = userClient.observable.subscribe({
+    //  next: (user) => {
+    //    userId = user.id;
+    //  },
+    //  error: (error) => {
+    //    console.error(error);
+    //  },
+    //  complete: () => {},
+    //});
+
+    getStreamers();
   });
 
   let url = "http://localhost:3000/push";
+  let streamer = "";
   let toggled = true;
 
   async function post(key: string) {
-    if (url !== "") {
+    if (streamer !== "") {
       let res = await fetch(url, {
         method: "POST",
         headers: {
@@ -34,7 +47,7 @@
         body: JSON.stringify({
           org_id: userId,
           input: key,
-          stream: "testStream",
+          stream: streamer,
         }),
       }).then((response) => {
         return response.json();
@@ -44,12 +57,8 @@
         alert(res.error);
       }
     } else {
-      alert("You need to set the url first!");
+      alert("You need to select a streamer from the dropdown first!");
     }
-  }
-
-  function setUrl() {
-    url = prompt("Set the url");
   }
 
   function toggleController() {
@@ -62,6 +71,8 @@
   }
 
   toggleController();
+
+  $: console.log(activeStreamers, typeof activeStreamers);
 </script>
 
 <main
@@ -70,99 +81,97 @@
   {#if toggled === true}
     <div class="dpad-1 m-6 absolute">
       <button
-        class="bg-stone-900 w-9 h-9 rounded-md mx-9 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-md mx-9 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("d1_up")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-md mx-9 my-16 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-md mx-9 my-16 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("d1_down")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-md mx-[4.5rem] my-8 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-md mx-[4.5rem] my-8 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("d1_right")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-md my-8 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-md my-8 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("d1_left")}
       />
     </div>
 
     <div class="button-set-1 mx-64 my-6 absolute">
       <button
-        class="bg-stone-900 w-9 h-9 rounded-full mx-9 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-full mx-9 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("x1")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-full mx-9 my-16 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-full mx-9 my-16 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("b1")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-full mx-[4.5rem] my-8 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-full mx-[4.5rem] my-8 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("a1")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-full my-8 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-full my-8 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("y1")}
       />
     </div>
 
     <div class="dpad-2 mx-64 my-44 absolute">
       <button
-        class="bg-stone-900 w-9 h-9 rounded-md mx-9 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-md mx-9 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("d2_up")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-md mx-9 my-16 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-md mx-9 my-16 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("d2_down")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-md mx-[4.5rem] my-8 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-md mx-[4.5rem] my-8 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("d2_right")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-md my-8 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-md my-8 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("d2_left")}
       />
     </div>
 
     <div class="button-set-2 my-44 absolute mx-6">
       <button
-        class="bg-stone-900 w-9 h-9 rounded-full mx-9 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-full mx-9 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("x2")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-full mx-9 my-16 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-full mx-9 my-16 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("b2")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-full mx-[4.5rem] my-8 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-full mx-[4.5rem] my-8 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("a2")}
       />
       <button
-        class="bg-stone-900 w-9 h-9 rounded-full my-8 absolute"
+        class="bg-stone-900 w-9 h-9 rounded-full my-8 absolute hover:border-2 hover:border-slate-300"
         on:click={() => post("y2")}
       />
     </div>
 
-    <button class="mx-[23rem] mt-2 absolute" on:click={setUrl}>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="w-6 h-6"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
-        />
-      </svg>
-    </button>
+    <div>
+      {#if typeof activeStreamers === undefined}
+        <p>Loading streamers...</p>
+      {:else}
+        <select
+          class="mx-[8rem] w-4/12 mt-[16.75rem] absolute bg-stone-800 hover:text-slate-50 text-slate-500 rounded-md p-1"
+          bind:value={streamer}
+        >
+          {#each activeStreamers as streamer}
+            <option value={streamer.stream}>{streamer.stream}</option>
+          {/each}
+        </select>
+      {/if}
+    </div>
   {/if}
 
-  <button class="mx-[22.5] m-1 absolute" on:click={toggleController}>
+  <button class="mx-[22.5] m-1 absolute " on:click={toggleController}>
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
