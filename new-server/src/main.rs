@@ -2,7 +2,14 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, Salt, SaltString},
     Argon2,
 };
-use axum::{extract, extract::State, routing::get, routing::post, Json, Router};
+use axum::{
+    extract,
+    extract::State,
+    http::{header, Method},
+    routing::get,
+    routing::post,
+    Json, Router,
+};
 use chrono::{DateTime, Utc};
 use rustis::{
     client::Client,
@@ -13,6 +20,7 @@ use rustis::{
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::env;
+use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
@@ -124,7 +132,9 @@ async fn push(
         {
             return Json(AppRes {
                 body: None,
-                error: Some("Slow down. Too many requests"),
+                error: Some(
+                    "Slow down you are sending too many inputs! \nYou can only send 1 a second.",
+                ),
             });
         }
     }
@@ -348,6 +358,16 @@ async fn main() -> Result<()> {
 
     sqlx::migrate!().run(&db_pool).await.unwrap();
 
+    let cors = CorsLayer::new()
+        .allow_methods([Method::POST, Method::GET, Method::OPTIONS])
+        .allow_headers([
+            header::ACCEPT,
+            header::ACCEPT_LANGUAGE,
+            header::AUTHORIZATION,
+            header::CONTENT_LANGUAGE,
+            header::CONTENT_TYPE,
+        ])
+        .allow_origin(Any);
     let app = Router::new()
         .route("/shift", post(shift))
         .route("/push", post(push))
@@ -359,7 +379,8 @@ async fn main() -> Result<()> {
         .with_state(AppState {
             redis_client,
             db_pool,
-        });
+        })
+        .layer(cors);
 
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())

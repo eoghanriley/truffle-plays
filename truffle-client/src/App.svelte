@@ -7,20 +7,24 @@
     embed.hide();
   }
 
-  let url = "";
+  let url = "http://localhost:3000/push";
   let toggled = true;
 
-  function post(key: string) {
+  async function post(key: string) {
     if (url !== "") {
-      fetch(url, {
+      let res = await fetch(url, {
         method: "POST",
         headers: {
-          accept: "application.json",
-          "Content-Type": "application/json",
+          "Content-type": "application/json",
         },
-        body: JSON.stringify({ input: key }),
-        cache: "default",
+        body: JSON.stringify({ org_id: "1", input: key, stream: "testStream" }),
+      }).then((response) => {
+        return response.json();
       });
+
+      if (res.body !== "Success") {
+        alert(res.error);
+      }
     } else {
       alert("You need to set the url first!");
     }
