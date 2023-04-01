@@ -1,0 +1,10 @@
+CREATE TABLE
+  IF NOT EXISTS streamers (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    stream VARCHAR(255) NOT NULL UNIQUE,
+    api_token VARCHAR(255) NOT NULL UNIQUE,
+    donater BOOLEAN NOT NULL DEFAULT False,
+    active_stream BOOLEAN NOT NULL DEFAULT False
+  )
