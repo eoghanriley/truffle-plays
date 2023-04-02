@@ -4,6 +4,7 @@ use argon2::{
 };
 use axum::{
     extract,
+    extract::Path,
     extract::State,
     http::{header, Method},
     routing::get,
@@ -44,6 +45,12 @@ struct Streamer {
     api_token: Option<String>,
     donater: Option<bool>,
     active_stream: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
+struct RegisterLinks {
+    link: String,
+    used: bool,
 }
 
 #[derive(Clone)]
@@ -178,8 +185,25 @@ fn gen_uuid() -> Uuid {
 #[axum_macros::debug_handler]
 async fn register_streamer(
     State(state): State<AppState>,
+    Path(link): Path<String>,
     extract::Json(mut payload): extract::Json<Streamer>,
 ) -> extract::Json<AppRes<'static, String>> {
+    let valid = sqlx::query_as::<_, RegisterLinks>("SELECT * FROM register_links WHERE link = $1")
+        .bind(link)
+        .fetch_one(&state.db_pool)
+        .await
+        .unwrap_or_else(|_| RegisterLinks {
+            link: "".to_string(),
+            used: true,
+        });
+
+    if valid.used == true || valid.link == "" {
+        return Json(AppRes {
+            body: None,
+            error: Some("Sign up key is not valid."),
+        });
+    }
+
     let password_salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
 
@@ -208,6 +232,12 @@ async fn register_streamer(
     .execute(&state.db_pool)
     .await
     .unwrap();
+
+    sqlx::query("UPDATE register_links SET used = True WHERE link = $1")
+        .bind(valid.link)
+        .execute(&state.db_pool)
+        .await
+        .unwrap();
 
     Json(AppRes {
         body: Some(unhashed_token),
@@ -371,7 +401,7 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/shift", post(shift))
         .route("/push", post(push))
-        .route("/register", post(register_streamer))
+        .route("/register/:link", post(register_streamer))
         .route("/regen_token", post(regen_token))
         .route("/toggle_stream", post(toggle_stream))
         .route("/login", post(login))
