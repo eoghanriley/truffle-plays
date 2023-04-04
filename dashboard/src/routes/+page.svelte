@@ -16,11 +16,11 @@
 			<div class="grid md:grid-cols-2 grid-rows-2 mx-4 gap-8 mt-32 text-center place-items-center">
 				<button
 					class="border-2 border-slate-800 hover:border-slate-50 text-slate-300 text-5xl font-extrabold rounded-xl py-4 bg-slate-800 w-52"
-					>Login</button
+					><a href="/login">Login</a></button
 				>
 				<button
 					class="hover:border-2 hover:border-slate-50 text-slate-100 text-5xl font-extrabold rounded-xl py-4 bg-gradient-to-r from-red-400 via-emerald-400 to-sky-900 w-52"
-					>Signup</button
+					><a href="/signup">Signup</a></button
 				>
 			</div>
 		</div>
