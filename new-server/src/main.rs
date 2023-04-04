@@ -74,11 +74,18 @@ struct AppReq {
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 struct Stream {
     stream: String,
+    username: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 struct Streams {
     names: Vec<Stream>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct Login {
+    username: String,
+    password: String,
 }
 
 // TODO: change unwraps to expect
@@ -343,22 +350,24 @@ async fn toggle_stream(
 
 async fn login(
     State(state): State<AppState>,
-    extract::Json(payload): extract::Json<AppReq>,
-) -> extract::Json<AppRes<'static, Streamer>> {
-    let mut streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE api_token = $1 LIMIT 1")
-            .bind(&payload.api_token)
+    extract::Json(payload): extract::Json<Login>,
+) -> extract::Json<AppRes<'static, bool>> {
+    let streamer =
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = $1 LIMIT 1")
+            .bind(&payload.username)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
 
-    streamer.id = None;
-    streamer.password = "".to_string();
-    streamer.api_token = None;
-    streamer.donater = None;
+    if verify_hash(&streamer.password, &payload.password) == false {
+        return Json(AppRes {
+            body: None,
+            error: Some("Error with validation"),
+        });
+    }
 
     Json(AppRes {
-        body: Some(streamer),
+        body: streamer.active_stream,
         error: None,
     })
 }
@@ -366,7 +375,7 @@ async fn login(
 async fn get_active_streamers(State(state): State<AppState>) -> extract::Json<Streams> {
     Json(Streams {
         names: sqlx::query_as::<_, Stream>(
-            "SELECT stream FROM streamers where active_stream = True",
+            "SELECT stream, username FROM streamers where active_stream = True",
         )
         .fetch_all(&state.db_pool)
         .await
