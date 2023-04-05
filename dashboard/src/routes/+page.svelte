@@ -13,7 +13,15 @@
 				</h1>
 			</div>
 
-			<div class="grid md:grid-cols-2 grid-rows-2 mx-4 gap-8 mt-32 text-center place-items-center">
+			<div class="text-slate-100 md:text-4xl text-3xl font-bold md:mt-4 mt-12 flex justify-center">
+				<p class="text-center">
+					Take your chat plays streams to the next <b
+						class="underline font-extrabold md:text-5xl text-4xl">LEVEL!</b
+					>
+				</p>
+			</div>
+
+			<div class="grid md:grid-cols-2 grid-rows-2 mx-4 gap-8 mt-20 text-center place-items-center">
 				<button
 					class="border-2 border-slate-800 hover:border-slate-50 text-slate-300 text-5xl font-extrabold rounded-xl py-4 bg-slate-800 w-52"
 					><a href="/login">Login</a></button
