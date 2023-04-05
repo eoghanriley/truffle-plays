@@ -48,5 +48,7 @@ export const actions = {
     if (res.error !== null) {
       return fail(400, { incorrect: true });
     }
+
+    redirect(303, '/toggle-stream');
   }
 } satisfies Actions;

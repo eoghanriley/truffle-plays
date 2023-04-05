@@ -36,6 +36,8 @@ export const actions = {
     }
 
     cookies.set('loggedIn', orgId?.toString());
+
+    // Changes page so that token isn't in url for security
     throw redirect(303, '/');
   }
 } satisfies Actions;
