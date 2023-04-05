@@ -1,13 +1,30 @@
 <script lang="ts">
-	import type { PageData } from './$types';
+	import type { PageData, ActionData } from './$types';
+	import Modal from '$lib/components/Modal.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import '../../app.css';
 
 	export let data: PageData;
+	export let form: ActionData;
+
+	let modals = [form?.incorrect];
+	function toggleModal(event) {
+		modals[0] = !modals[0];
+	}
 </script>
 
 <main class="min-h-screen bg-slate-900">
 	<Header />
+
+	{#if modals[0]}
+		<Modal
+			name="error"
+			title="Error Toggling Stream"
+			body="There was an error please try again."
+			button="Try again"
+			on:toggleModal={toggleModal}
+		/>
+	{/if}
 
 	<div class="text-slate-100 text-center text-2xl pt-8">
 		{#if data.active}

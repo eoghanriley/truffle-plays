@@ -1,9 +1,10 @@
 <script lang="ts">
 	import type { ActionData } from './$types';
-	export let form: ActionData;
 	import '../../../app.css';
 	import Modal from '$lib/components/Modal.svelte';
 	import Header from '$lib/components/Header.svelte';
+
+	export let form: ActionData;
 
 	let modals = [form?.incorrect, form?.key_incorrect];
 
