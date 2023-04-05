@@ -25,7 +25,7 @@ export const actions = {
         'Content-type': 'application/json'
       },
       body: JSON.stringify({
-        username: orgId,
+        org_id: orgId,
         password: password,
         stream: stream
       })
@@ -42,6 +42,7 @@ export const actions = {
       });
 
     if (res.error !== null) {
+      console.log(res.error);
       return fail(400, { key_incorrect: true });
     }
 

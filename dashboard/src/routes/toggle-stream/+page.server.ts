@@ -32,7 +32,7 @@ export const actions = {
       },
       body: JSON.stringify({
         api_token: token,
-        username: cookies.get('loggedIn')
+        org_id: cookies.get('loggedIn')
       })
     })
       .then((response) => {

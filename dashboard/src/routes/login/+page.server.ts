@@ -17,7 +17,7 @@ export const actions = {
         'Content-type': 'application/json'
       },
       body: JSON.stringify({
-        username: orgId,
+        org_id: orgId,
         password: password
       })
     })

@@ -26,7 +26,7 @@ use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
 struct Viewer {
-    org_id: String,
+    user_id: String,
     input: String,
     stream: String,
 }
@@ -39,7 +39,7 @@ struct StreamerRes {
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 struct Streamer {
     id: Option<i32>,
-    username: String,
+    org_id: String,
     password: String,
     stream: String,
     api_token: Option<String>,
@@ -68,13 +68,13 @@ struct AppRes<'a, T> {
 #[derive(Deserialize, Serialize, Debug)]
 struct AppReq {
     api_token: String,
-    username: String,
+    org_id: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 struct Stream {
     stream: String,
-    username: String,
+    org_id: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
@@ -84,7 +84,7 @@ struct Streams {
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Login {
-    username: String,
+    org_id: String,
     password: String,
 }
 
@@ -95,8 +95,8 @@ async fn shift(
     extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, Vec<String>>> {
     let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = $1 LIMIT 1")
-            .bind(payload.username)
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE org_id = $1 LIMIT 1")
+            .bind(payload.org_id)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
@@ -129,7 +129,7 @@ async fn push(
 ) -> Json<AppRes<'static, &'static str>> {
     let last_push: Option<String> = state
         .redis_client
-        .get(payload.org_id.clone())
+        .get(payload.user_id.clone())
         .await
         .unwrap();
 
@@ -155,7 +155,7 @@ async fn push(
 
     let _ = state
         .redis_client
-        .set(payload.org_id, Utc::now().to_string())
+        .set(payload.user_id, Utc::now().to_string())
         .await
         .unwrap();
 
@@ -230,9 +230,9 @@ async fn register_streamer(
     payload.api_token = Some(gen_uuid().to_string());
 
     sqlx::query(
-        "INSERT INTO streamers (username, password, stream, api_token) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO streamers (org_id, password, stream, api_token) VALUES ($1, $2, $3, $4)",
     )
-    .bind(payload.username)
+    .bind(payload.org_id)
     .bind(payload.password)
     .bind(payload.stream)
     .bind(hashed_token)
@@ -272,9 +272,9 @@ async fn regen_token(
     extract::Json(payload): extract::Json<Streamer>,
 ) -> Json<AppRes<'static, String>> {
     let streamer = sqlx::query_as::<_, Streamer>(
-        "SELECT * FROM streamers WHERE username = $1 AND stream = $2 LIMIT 1",
+        "SELECT * FROM streamers WHERE org_id = $1 AND stream = $2 LIMIT 1",
     )
-    .bind(payload.username)
+    .bind(payload.org_id)
     .bind(payload.stream)
     .fetch_one(&state.db_pool)
     .await
@@ -314,8 +314,8 @@ async fn toggle_stream(
     extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, bool>> {
     let mut streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = $1 LIMIT 1")
-            .bind(&payload.username)
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE org_id = $1 LIMIT 1")
+            .bind(&payload.org_id)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
@@ -330,10 +330,10 @@ async fn toggle_stream(
     streamer.active_stream = Some(!streamer.active_stream.unwrap());
 
     sqlx::query(
-        "UPDATE streamers SET active_stream = $1 WHERE username = $2 RETURNING active_stream",
+        "UPDATE streamers SET active_stream = $1 WHERE org_id = $2 RETURNING active_stream",
     )
     .bind(&streamer.active_stream.unwrap())
-    .bind(payload.username)
+    .bind(payload.org_id)
     .fetch_one(&state.db_pool)
     .await
     .unwrap();
@@ -353,8 +353,8 @@ async fn login(
     extract::Json(payload): extract::Json<Login>,
 ) -> extract::Json<AppRes<'static, bool>> {
     let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE username = $1 LIMIT 1")
-            .bind(&payload.username)
+        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE org_id = $1 LIMIT 1")
+            .bind(&payload.org_id)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
@@ -375,7 +375,7 @@ async fn login(
 async fn get_active_streamers(State(state): State<AppState>) -> extract::Json<Streams> {
     Json(Streams {
         names: sqlx::query_as::<_, Stream>(
-            "SELECT stream, username FROM streamers where active_stream = True",
+            "SELECT stream, org_id FROM streamers where active_stream = True",
         )
         .fetch_all(&state.db_pool)
         .await
