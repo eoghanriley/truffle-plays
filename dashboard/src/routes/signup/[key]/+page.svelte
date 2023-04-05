@@ -55,7 +55,7 @@
 				/>
 
 				<!--Stream-->
-				<label for="orgId" class="pt-3 text-2xl font-bold">Stream</label>
+				<label for="stream" class="pt-3 text-2xl font-bold">Channel Name</label>
 				<input
 					type="text"
 					name="stream"
