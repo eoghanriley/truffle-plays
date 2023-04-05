@@ -15,7 +15,7 @@
 			<a href="/" class="-m-1.5 p-1.5">
 				<span class="sr-only">Truffle Plays</span>
 				<img
-					class="h-8 w-auto"
+					class="h-8 w-auto hidden"
 					src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
 					alt=""
 				/>
@@ -49,7 +49,7 @@
 			<a href="/toggle-stream" class="text-lg font-semibold leading-6 text-slate-300"
 				>Stream Control</a
 			>
-			<a href="/" class="text-lg font-semibold leading-6 text-slate-300">Regenerate Token</a>
+			<a href="/login" class="text-lg font-semibold leading-6 text-slate-300">Login</a>
 		</div>
 		<!-- Coconut.jpg -->
 		<div class="hidden lg:flex lg:flex-1 lg:justify-end">
@@ -68,7 +68,7 @@
 					<a href="/" class="-m-1.5 p-1.5">
 						<span class="sr-only">Truffle Plays</span>
 						<img
-							class="h-8 w-auto"
+							class="h-8 w-auto hidden"
 							src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
 							alt=""
 						/>
@@ -102,9 +102,9 @@
 									>Stream Control</a
 								>
 								<a
-									href="/"
-									class="-mx-3 block rounded-lg px-3 py-2 text-xl font-semibold leading-7 text-gray-300 hover:bg-gray-50"
-									>Regenerate Token</a
+									href="/login"
+									class="-mx-3 block rounded-lg px-3 py-2 text-xl font-semibold leading-7 text-slate-300 hover:bg-gray-50"
+									>Login</a
 								>
 							</div>
 						</div>
