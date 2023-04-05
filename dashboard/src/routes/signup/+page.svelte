@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../../app.css';
 	import { goto } from '$app/navigation';
+	import Header from '$lib/components/Header.svelte';
 
 	let key = '';
 
@@ -11,6 +12,7 @@
 </script>
 
 <main class="bg-slate-900 min-h-screen">
+	<Header />
 	<h2 class="text-6xl text-center font-extrabold text-slate-100 pt-8">How to Signup</h2>
 
 	<p class="text-slate-100 text-w-prose text-center mt-8 text-xl md:mx-48 mx-10">

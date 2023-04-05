@@ -1,11 +1,14 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import Header from '$lib/components/Header.svelte';
 	import '../../app.css';
 
 	export let data: PageData;
 </script>
 
 <main class="min-h-screen bg-slate-900">
+	<Header />
+
 	<div class="text-slate-100 text-center text-2xl pt-8">
 		{#if data.active}
 			<p>Your stream is currently <b class="font-extrabold uppercase">active</b>.</p>

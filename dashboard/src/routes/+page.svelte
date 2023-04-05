@@ -1,8 +1,10 @@
 <script lang="ts">
 	import '../app.css';
+	import Header from '$lib/components/Header.svelte';
 </script>
 
 <main class="bg-slate-900 min-h-screen">
+	<Header />
 	<div class="flex justify-center">
 		<div class="flex flex-col">
 			<div class="flex justify-center">

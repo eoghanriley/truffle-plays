@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../../app.css';
 	import type { ActionData } from './$types';
+	import Header from '$lib/components/Header.svelte';
 
 	export let form: ActionData;
 
@@ -12,6 +13,7 @@
 </script>
 
 <main class="min-h-screen bg-slate-900">
+	<Header />
 	{#if modal}
 		<div
 			class="relative z-10"

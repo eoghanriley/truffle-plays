@@ -3,6 +3,7 @@
 	export let form: ActionData;
 	import '../../../app.css';
 	import Modal from '$lib/components/Modal.svelte';
+	import Header from '$lib/components/Header.svelte';
 
 	let modals = [form?.incorrect, form?.key_incorrect];
 
@@ -16,6 +17,7 @@
 </script>
 
 <main class="min-h-screen bg-slate-900">
+	<Header />
 	{#if modals[0]}
 		<Modal
 			name="credentials"
