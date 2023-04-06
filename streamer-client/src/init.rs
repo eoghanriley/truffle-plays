@@ -28,7 +28,7 @@ pub struct Settings {
     pub y2: char,
 
     // Password to server GET
-    pub username: String,
+    pub org_id: String,
     pub api_token: String,
     // rate to poll server in milliseconds
     pub poll_rate: u64,

@@ -13,7 +13,7 @@ async fn main() {
     let mut enigo = Enigo::new();
     let mut auth = HashMap::new();
     auth.insert("api_token", &settings.api_token);
-    auth.insert("username", &settings.username);
+    auth.insert("org_id", &settings.org_id);
 
     loop {
         let res = client
