@@ -46,7 +46,7 @@
 								{title}
 							</h3>
 							<div class="mt-2">
-								<p class="text-sm text-slate-100">{body}</p>
+								<p class="text-sm text-slate-100">{@html body}</p>
 							</div>
 						</div>
 					</div>

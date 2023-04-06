@@ -47,6 +47,6 @@ export const actions = {
     }
 
     cookies.set('loggedIn', orgId?.toString());
-    throw redirect(303, '/');
+    return fail(200, { api_token: res.body });
   }
 } satisfies Actions;

@@ -1,18 +1,22 @@
 <script lang="ts">
 	import type { ActionData } from './$types';
+	import { goto } from '$app/navigation';
 	import '../../../app.css';
 	import Modal from '$lib/components/Modal.svelte';
 	import Header from '$lib/components/Header.svelte';
 
 	export let form: ActionData;
 
-	let modals = [form?.incorrect, form?.key_incorrect];
+	let modals = [form?.incorrect, form?.key_incorrect, form?.api_token];
 
 	function toggleModal(event) {
 		if (event.detail.name === 'credentials') {
 			modals[0] = !modals[0];
-		} else {
+		} else if (event.detail.name === 'key') {
 			modals[1] = !modals[1];
+		} else {
+			modals[2] = !modals[2];
+			goto('/toggle-stream');
 		}
 	}
 </script>
@@ -35,6 +39,16 @@
 			title="Nice Try :)"
 			body="There was an error with the key you provided."
 			button="Try again"
+			on:toggleModal={toggleModal}
+		/>
+	{/if}
+
+	{#if modals[2]}
+		<Modal
+			name="token"
+			title="Signup Succesfull"
+			body="This is your api-token please save it in a password manager it is very important. DO NOT LEAK IT!!! <pre>token: {form?.api_token}</pre>"
+			button="Got it"
 			on:toggleModal={toggleModal}
 		/>
 	{/if}
