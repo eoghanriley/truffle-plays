@@ -1,41 +1,33 @@
-FROM debian:bullseye as builder
+FROM rust:latest as builder
 
-ARG NODE_VERSION=16.18.1
+# Make a fake Rust app to keep a cached layer of compiled crates
+RUN USER=root cargo new app
+WORKDIR /usr/src/app
+COPY Cargo.toml Cargo.lock ./
+# Needs at least a main.rs file with a main function
+RUN mkdir src && echo "fn main(){}" > src/main.rs
+# Will build all dependent crates in release mode
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/usr/src/app/target \
+  cargo build --release
 
-RUN apt-get update; apt install -y curl python-is-python3 pkg-config build-essential curl lsof
-RUN curl https://get.volta.sh | bash
-ENV VOLTA_HOME /root/.volta
-ENV PATH /root/.volta/bin:$PATH
-RUN volta install node@${NODE_VERSION}
-
-#######################################################################
-
-RUN mkdir /app
-WORKDIR /app
-
-# NPM will not install any package listed in "devDependencies" when NODE_ENV is set to "production",
-# to install all modules: "npm install --production=false".
-# Ref: https://docs.npmjs.com/cli/v9/commands/npm-install#description
-
-ENV NODE_ENV production
-EXPOSE 3000
-EXPOSE 80:3000
-EXPOSE 3000:80
-
+# Copy the rest
 COPY . .
+# Build (install) the actual binaries
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/usr/src/app/target \
+  cargo install --path .
 
-RUN npm install
-FROM debian:bullseye
+# Runtime image
+FROM debian:bullseye-slim
 
-LABEL fly_launch_runtime="nodejs"
+# Run as "app" user
+RUN useradd -ms /bin/bash app
 
-COPY --from=builder /root/.volta /root/.volta
-COPY --from=builder /app /app
-
+USER app
 WORKDIR /app
-ENV NODE_ENV production
-ENV PATH /root/.volta/bin:$PATH
-ENV PORT 3000
 
-CMD [ "npm", "run", "start" ]
+# Get compiled binaries from builder's cargo install directory
+COPY --from=builder /usr/local/cargo/bin/truffle-plays-server /app/truffle-plays-server
 
+# No CMD or ENTRYPOINT, see fly.toml with `cmd` override.

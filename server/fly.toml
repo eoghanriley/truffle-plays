@@ -1,17 +1,13 @@
-# fly.toml file generated for truffle-plays on 2023-02-22T19:40:32-05:00
+# fly.toml file generated for truffle-plays on 2023-03-25T13:36:44-04:00
 
 app = "truffle-plays"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
 
-[env]
-PORT = "3000"
-AUTH = "e"
-FASTIFY_ADDRESS = "0.0.0.0"
-
 [experimental]
   auto_rollback = true
+  cmd = "./truffle-plays-server"
 
 [[services]]
   http_checks = []
@@ -34,7 +30,7 @@ FASTIFY_ADDRESS = "0.0.0.0"
     port = 443
 
   [[services.tcp_checks]]
-    grace_period = "120s"
+    grace_period = "1s"
     interval = "15s"
     restart_limit = 0
     timeout = "2s"

@@ -19,7 +19,7 @@
   "b2": "m",
   "y2": "g",
 
-  "auth": "e",
-  "poll_rate": 1000,
-  "url": "https://truffle-plays.fly.dev/"
+  "org_id": "testUser",
+  "api_token": "69e751ad-1641-5f7d-bf4e-886596894f47",
+  "poll_rate": 500
 }
