@@ -1,20 +1,20 @@
 mod auth;
+mod streamer;
 mod util;
 mod viewer;
 
 use auth::{login, regen_token, register_streamer};
 use axum::{
-    extract,
-    extract::State,
     http::{header, Method},
     routing::get,
     routing::post,
-    Json, Router,
+    Router,
 };
-use rustis::{client::Client, commands::GenericCommands, Result};
+use rustis::{client::Client, Result};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::env;
+use streamer::toggle_stream;
 use tower_http::cors::{Any, CorsLayer};
 use util::verify_hash;
 use viewer::{get_active_streamers, push, shift};
@@ -73,7 +73,7 @@ struct Stream {
 }
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
-struct Streams {
+pub struct Streams {
     names: Vec<Stream>,
 }
 
@@ -81,45 +81,6 @@ struct Streams {
 pub struct Login {
     org_id: String,
     password: String,
-}
-
-async fn toggle_stream(
-    State(mut state): State<AppState>,
-    extract::Json(payload): extract::Json<AppReq>,
-) -> Json<AppRes<'static, bool>> {
-    let mut streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE org_id = $1 LIMIT 1")
-            .bind(&payload.org_id)
-            .fetch_one(&state.db_pool)
-            .await
-            .unwrap();
-
-    if verify_hash(&streamer.api_token.unwrap(), &payload.api_token) == false {
-        return Json(AppRes {
-            body: None,
-            error: Some("Error with validation"),
-        });
-    }
-
-    streamer.active_stream = Some(!streamer.active_stream.unwrap());
-
-    sqlx::query(
-        "UPDATE streamers SET active_stream = $1 WHERE org_id = $2 RETURNING active_stream",
-    )
-    .bind(&streamer.active_stream.unwrap())
-    .bind(payload.org_id)
-    .fetch_one(&state.db_pool)
-    .await
-    .unwrap();
-
-    if &streamer.active_stream.unwrap() == &false {
-        let _ = state.redis_client.del(streamer.stream);
-    }
-
-    Json(AppRes {
-        body: Some(!streamer.active_stream.unwrap()),
-        error: None,
-    })
 }
 
 #[tokio::main]
