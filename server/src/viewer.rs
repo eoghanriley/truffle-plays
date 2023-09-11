@@ -1,4 +1,4 @@
-use crate::{db::Streamer, verify_hash, AppReq, AppRes, AppState, Stream};
+use crate::{db::Mod, db::Stream, verify_hash, AppReq, AppRes, AppState};
 use axum::{extract, extract::State, Json};
 use chrono::{DateTime, Utc};
 use rustis::{commands::ListCommands, commands::StringCommands};
@@ -20,9 +20,15 @@ pub async fn shift(
     State(mut state): State<AppState>,
     extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, Vec<String>>> {
-    let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE org_id = $1 LIMIT 1")
-            .bind(payload.org_id)
+    let streamer = sqlx::query_as::<_, Mod>(r#"SELECT * FROM mods WHERE org_id = $1 LIMIT 1"#)
+        .bind(payload.org_id)
+        .fetch_one(&state.db_pool)
+        .await
+        .unwrap();
+
+    let stream =
+        sqlx::query_as::<_, Stream>(r#"SELECT status FROM streams WHERE name = $1 LIMIT 1"#)
+            .bind(&streamer.stream)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
@@ -34,7 +40,7 @@ pub async fn shift(
         });
     }
 
-    if streamer.active_stream.unwrap() == false {
+    if stream.status.unwrap() == false {
         return Json(AppRes {
             body: None,
             error: Some("Stream not active"),
@@ -86,13 +92,13 @@ pub async fn push(
         .unwrap();
 
     let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE stream = $1 LIMIT 1")
+        sqlx::query_as::<_, Stream>("SELECT status FROM streams WHERE stream = $1 LIMIT 1")
             .bind(&payload.stream)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
 
-    if streamer.active_stream.unwrap() == false {
+    if streamer.status.unwrap() == false {
         return Json(AppRes {
             body: None,
             error: Some("Stream not active"),
