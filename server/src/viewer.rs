@@ -1,4 +1,4 @@
-use crate::{db::Mod, db::Stream, verify_hash, AppReq, AppRes, AppState};
+use crate::{db::Mod, db::Org, verify_hash, AppReq, AppRes, AppState};
 use axum::{extract, extract::State, Json};
 use chrono::{DateTime, Utc};
 use rustis::{commands::ListCommands, commands::StringCommands};
@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 pub struct Streams {
-    names: Vec<Stream>,
+    names: Vec<Org>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -21,14 +21,14 @@ pub async fn shift(
     extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, Vec<String>>> {
     let streamer = sqlx::query_as::<_, Mod>(r#"SELECT * FROM mods WHERE org_id = $1 LIMIT 1"#)
-        .bind(payload.org_id)
+        .bind(payload.id)
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
 
     let stream =
-        sqlx::query_as::<_, Stream>(r#"SELECT status FROM streams WHERE name = $1 LIMIT 1"#)
-            .bind(&streamer.stream)
+        sqlx::query_as::<_, Org>(r#"SELECT status, name FROM streams WHERE org_id = $1 LIMIT 1"#)
+            .bind(&streamer.org_id)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
@@ -47,7 +47,7 @@ pub async fn shift(
         });
     }
 
-    let res: Vec<String> = state.redis_client.rpop(streamer.stream, 10).await.unwrap();
+    let res: Vec<String> = state.redis_client.rpop(stream.name, 10).await.unwrap();
     Json(AppRes {
         body: Some(res),
         error: None,
@@ -91,12 +91,11 @@ pub async fn push(
         .await
         .unwrap();
 
-    let streamer =
-        sqlx::query_as::<_, Stream>("SELECT status FROM streams WHERE stream = $1 LIMIT 1")
-            .bind(&payload.stream)
-            .fetch_one(&state.db_pool)
-            .await
-            .unwrap();
+    let streamer = sqlx::query_as::<_, Org>("SELECT status FROM streams WHERE stream = $1 LIMIT 1")
+        .bind(&payload.stream)
+        .fetch_one(&state.db_pool)
+        .await
+        .unwrap();
 
     if streamer.status.unwrap() == false {
         return Json(AppRes {
@@ -119,11 +118,9 @@ pub async fn push(
 
 pub async fn get_active_streamers(State(state): State<AppState>) -> extract::Json<Streams> {
     Json(Streams {
-        names: sqlx::query_as::<_, Stream>(
-            "SELECT stream, org_id FROM streamers where active_stream = True",
-        )
-        .fetch_all(&state.db_pool)
-        .await
-        .unwrap(),
+        names: sqlx::query_as::<_, Org>("SELECT stream FROM streamers where status = True")
+            .fetch_all(&state.db_pool)
+            .await
+            .unwrap(),
     })
 }

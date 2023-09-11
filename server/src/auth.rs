@@ -1,4 +1,4 @@
-use crate::{db::Mod, db::RegisterLinks, db::Stream, verify_hash, AppRes, AppState};
+use crate::{db::Mod, db::Org, db::RegisterLinks, verify_hash, AppRes, AppState};
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2,
@@ -96,14 +96,11 @@ pub async fn regen_token(
     State(state): State<AppState>,
     extract::Json(payload): extract::Json<Mod>,
 ) -> Json<AppRes<'static, String>> {
-    let user = sqlx::query_as::<_, Mod>(
-        "SELECT * FROM streamers WHERE org_id = $1 AND stream = $2 LIMIT 1",
-    )
-    .bind(payload.id)
-    .bind(payload.stream)
-    .fetch_one(&state.db_pool)
-    .await
-    .unwrap();
+    let user = sqlx::query_as::<_, Mod>("SELECT * FROM mods WHERE org_id = $1 LIMIT 1")
+        .bind(payload.org_id)
+        .fetch_one(&state.db_pool)
+        .await
+        .unwrap();
 
     if verify_hash(&user.password.unwrap(), &payload.password.unwrap()) == false {
         return Json(AppRes {
@@ -151,8 +148,8 @@ pub async fn login(
         });
     }
 
-    let stream = sqlx::query_as::<_, Stream>(r#"SELECT status FROM streams WHERE name = $1"#)
-        .bind(user.stream.unwrap())
+    let stream = sqlx::query_as::<_, Org>(r#"SELECT status FROM streams WHERE org_id = $1"#)
+        .bind(user.org_id.unwrap())
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
