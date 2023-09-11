@@ -13,7 +13,7 @@ pub struct AppRes<'a, T> {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AppReq {
     pub api_token: String,
-    pub org_id: String,
+    pub id: String,
 }
 
 pub fn verify_hash(hashed_value: &str, unhashed_value: &str) -> bool {
