@@ -1,7 +1,20 @@
-use crate::{verify_hash, AppReq, AppRes, AppState, Stream, Streamer, Streams, Viewer};
+use crate::{db::Streamer, verify_hash, AppReq, AppRes, AppState, Stream};
 use axum::{extract, extract::State, Json};
 use chrono::{DateTime, Utc};
 use rustis::{commands::ListCommands, commands::StringCommands};
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
+pub struct Streams {
+    names: Vec<Stream>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Viewer {
+    user_id: String,
+    input: String,
+    stream: String,
+}
 
 pub async fn shift(
     State(mut state): State<AppState>,

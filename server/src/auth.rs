@@ -1,10 +1,17 @@
-use crate::{verify_hash, AppRes, AppState, Login, RegisterLinks, Streamer};
+use crate::{db::RegisterLinks, db::Streamer, verify_hash, AppRes, AppState};
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2,
 };
 use axum::{extract, extract::Path, extract::State, Json};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Login {
+    org_id: String,
+    password: String,
+}
 
 #[axum_macros::debug_handler]
 pub async fn register_streamer(

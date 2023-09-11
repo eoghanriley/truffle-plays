@@ -1,4 +1,4 @@
-use crate::{verify_hash, AppReq, AppRes, AppState, Streamer};
+use crate::{db::Streamer, verify_hash, AppReq, AppRes, AppState};
 use axum::{extract, extract::State, Json};
 use rustis::commands::GenericCommands;
 

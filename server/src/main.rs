@@ -1,8 +1,10 @@
 mod auth;
+mod db;
 mod streamer;
 mod util;
 mod viewer;
 
+use crate::{db::Stream, util::AppReq, util::AppRes};
 use auth::{login, regen_token, register_streamer};
 use axum::{
     http::{header, Method},
@@ -11,7 +13,6 @@ use axum::{
     Router,
 };
 use rustis::{client::Client, Result};
-use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::env;
 use streamer::toggle_stream;
@@ -19,68 +20,10 @@ use tower_http::cors::{Any, CorsLayer};
 use util::verify_hash;
 use viewer::{get_active_streamers, push, shift};
 
-#[derive(Deserialize, Debug)]
-pub struct Viewer {
-    user_id: String,
-    input: String,
-    stream: String,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct StreamerRes {
-    input: Vec<String>,
-}
-
-#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
-pub struct Streamer {
-    id: Option<i32>,
-    org_id: String,
-    password: String,
-    stream: String,
-    api_token: Option<String>,
-    donater: Option<bool>,
-    active_stream: Option<bool>,
-}
-
-#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
-struct RegisterLinks {
-    link: String,
-    used: bool,
-}
-
 #[derive(Clone)]
 pub struct AppState {
     redis_client: Client,
     db_pool: PgPool,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct AppRes<'a, T> {
-    body: Option<T>,
-    error: Option<&'a str>,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct AppReq {
-    api_token: String,
-    org_id: String,
-}
-
-#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
-struct Stream {
-    stream: String,
-    org_id: String,
-}
-
-#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
-pub struct Streams {
-    names: Vec<Stream>,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct Login {
-    org_id: String,
-    password: String,
 }
 
 #[tokio::main]
