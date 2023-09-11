@@ -1,4 +1,4 @@
-use crate::{db::RegisterLinks, db::Streamer, verify_hash, AppRes, AppState};
+use crate::{db::Mod, db::RegisterLinks, db::Stream, verify_hash, AppRes, AppState};
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2,
@@ -9,16 +9,24 @@ use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Login {
-    org_id: String,
+    id: String,
     password: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct RegisterMod {
+    name: String,
+    password: String,
+    stream: String,
 }
 
 #[axum_macros::debug_handler]
 pub async fn register_streamer(
     State(state): State<AppState>,
     Path(link): Path<String>,
-    extract::Json(mut payload): extract::Json<Streamer>,
+    extract::Json(mut payload): extract::Json<RegisterMod>,
 ) -> extract::Json<AppRes<'static, String>> {
+    // Check if link is valid
     let valid = sqlx::query_as::<_, RegisterLinks>("SELECT * FROM register_links WHERE link = $1")
         .bind(link)
         .fetch_one(&state.db_pool)
@@ -35,6 +43,7 @@ pub async fn register_streamer(
         });
     }
 
+    // Gen password
     let password_salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
 
@@ -43,6 +52,7 @@ pub async fn register_streamer(
         .unwrap()
         .to_string();
 
+    // Gen api_token
     let unhashed_token = gen_uuid().to_string();
     let token_salt = SaltString::generate(&mut OsRng);
 
@@ -51,15 +61,16 @@ pub async fn register_streamer(
         .unwrap()
         .to_string();
 
-    payload.api_token = Some(gen_uuid().to_string());
-
     sqlx::query(
-        "INSERT INTO streamers (org_id, password, stream, api_token) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO mods (id, name, password, stream, api_token, root, reciever) VALUES ($1, $2, $3, $4, $6, $7)",
     )
-    .bind(payload.org_id)
+    .bind(gen_uuid().to_string())
+    .bind(payload.name)
     .bind(payload.password)
     .bind(payload.stream)
     .bind(hashed_token)
+    .bind(false)
+    .bind(false)
     .execute(&state.db_pool)
     .await
     .unwrap();
@@ -83,18 +94,18 @@ pub fn gen_uuid() -> Uuid {
 #[axum_macros::debug_handler]
 pub async fn regen_token(
     State(state): State<AppState>,
-    extract::Json(payload): extract::Json<Streamer>,
+    extract::Json(payload): extract::Json<Mod>,
 ) -> Json<AppRes<'static, String>> {
-    let streamer = sqlx::query_as::<_, Streamer>(
+    let user = sqlx::query_as::<_, Mod>(
         "SELECT * FROM streamers WHERE org_id = $1 AND stream = $2 LIMIT 1",
     )
-    .bind(payload.org_id)
+    .bind(payload.id)
     .bind(payload.stream)
     .fetch_one(&state.db_pool)
     .await
     .unwrap();
 
-    if verify_hash(&streamer.password, &payload.password) == false {
+    if verify_hash(&user.password.unwrap(), &payload.password.unwrap()) == false {
         return Json(AppRes {
             body: None,
             error: Some("Error with password validation"),
@@ -111,9 +122,9 @@ pub async fn regen_token(
         .unwrap()
         .to_string();
 
-    sqlx::query("UPDATE streamers SET api_token = $1 WHERE id = $2 RETURNING api_token")
+    sqlx::query("UPDATE mods SET api_token = $1 WHERE id = $2 RETURNING api_token")
         .bind(hashed_token)
-        .bind(streamer.id.unwrap())
+        .bind(user.id.unwrap())
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
@@ -127,22 +138,27 @@ pub async fn login(
     State(state): State<AppState>,
     extract::Json(payload): extract::Json<Login>,
 ) -> extract::Json<AppRes<'static, bool>> {
-    let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE org_id = $1 LIMIT 1")
-            .bind(&payload.org_id)
-            .fetch_one(&state.db_pool)
-            .await
-            .unwrap();
+    let user = sqlx::query_as::<_, Mod>("SELECT * FROM mods WHERE id = $1 LIMIT 1")
+        .bind(&payload.id)
+        .fetch_one(&state.db_pool)
+        .await
+        .unwrap();
 
-    if verify_hash(&streamer.password, &payload.password) == false {
+    if verify_hash(&user.password.unwrap(), &payload.password) == false {
         return Json(AppRes {
             body: None,
             error: Some("Error with validation"),
         });
     }
 
+    let stream = sqlx::query_as::<_, Stream>(r#"SELECT status FROM streams WHERE name = $1"#)
+        .bind(user.stream.unwrap())
+        .fetch_one(&state.db_pool)
+        .await
+        .unwrap();
+
     Json(AppRes {
-        body: streamer.active_stream,
+        body: stream.status,
         error: None,
     })
 }
