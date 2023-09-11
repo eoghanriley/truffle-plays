@@ -3,19 +3,20 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 pub struct Stream {
     pub id: Option<i32>,
-    pub org_id: String,
-    pub name: String,
-    pub active_stream: bool,
-    pub mods: Vec<String>, // Mod ids
+    pub org_id: Option<String>,
+    pub name: Option<String>,
+    pub status: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 pub struct Mod {
-    pub id: String,
-    pub name: String,
-    pub password: String,
-    pub api_token: String,
-    pub root: bool,
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub password: Option<String>,
+    pub stream: Option<String>,
+    pub api_token: Option<String>,
+    pub root: Option<bool>,
+    pub reciever: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
