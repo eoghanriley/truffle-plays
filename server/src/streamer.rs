@@ -17,28 +17,28 @@ pub async fn toggle_stream(
         .await
         .unwrap();
 
-    if verify_hash(&user.api_token.unwrap(), &payload.api_token) == false {
+    if verify_hash(&user.api_token, &payload.api_token) == false {
         return Json(AppRes {
             body: None,
             error: Some("Error with validation"),
         });
     }
 
-    stream.status = Some(!stream.status.unwrap());
+    stream.status = !stream.status;
 
     sqlx::query(r#"UPDATE streams SET status = $1 WHERE org_id = $2 RETURNING active_stream"#)
-        .bind(&stream.status.unwrap())
-        .bind(user.org_id.unwrap())
+        .bind(&stream.status)
+        .bind(user.org_id)
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
 
-    if &stream.status.unwrap() == &false {
+    if &stream.status == &false {
         let _ = state.redis_client.del(stream.name);
     }
 
     Json(AppRes {
-        body: Some(stream.status.unwrap()),
+        body: Some(stream.status),
         error: None,
     })
 }

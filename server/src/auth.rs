@@ -17,11 +17,11 @@ pub struct Login {
 pub struct RegisterMod {
     name: String,
     password: String,
-    stream: String,
+    org_id: String,
 }
 
 #[axum_macros::debug_handler]
-pub async fn register_streamer(
+pub async fn register_mod(
     State(state): State<AppState>,
     Path(link): Path<String>,
     extract::Json(mut payload): extract::Json<RegisterMod>,
@@ -62,12 +62,12 @@ pub async fn register_streamer(
         .to_string();
 
     sqlx::query(
-        "INSERT INTO mods (id, name, password, stream, api_token, root, reciever) VALUES ($1, $2, $3, $4, $6, $7)",
+        "INSERT INTO mods (id, name, password, org_id, api_token, root, receiver) VALUES ($1, $2, $3, $4, $5, $6, $7)",
     )
     .bind(gen_uuid().to_string())
     .bind(payload.name)
     .bind(payload.password)
-    .bind(payload.stream)
+    .bind(payload.org_id)
     .bind(hashed_token)
     .bind(false)
     .bind(false)
@@ -102,7 +102,7 @@ pub async fn regen_token(
         .await
         .unwrap();
 
-    if verify_hash(&user.password.unwrap(), &payload.password.unwrap()) == false {
+    if verify_hash(&user.password, &payload.password) == false {
         return Json(AppRes {
             body: None,
             error: Some("Error with password validation"),
@@ -121,7 +121,7 @@ pub async fn regen_token(
 
     sqlx::query("UPDATE mods SET api_token = $1 WHERE id = $2 RETURNING api_token")
         .bind(hashed_token)
-        .bind(user.id.unwrap())
+        .bind(user.id)
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
@@ -141,7 +141,7 @@ pub async fn login(
         .await
         .unwrap();
 
-    if verify_hash(&user.password.unwrap(), &payload.password) == false {
+    if verify_hash(&user.password, &payload.password) == false {
         return Json(AppRes {
             body: None,
             error: Some("Error with validation"),
@@ -149,13 +149,13 @@ pub async fn login(
     }
 
     let stream = sqlx::query_as::<_, Org>(r#"SELECT status FROM streams WHERE org_id = $1"#)
-        .bind(user.org_id.unwrap())
+        .bind(user.org_id)
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
 
     Json(AppRes {
-        body: stream.status,
+        body: Some(stream.status),
         error: None,
     })
 }

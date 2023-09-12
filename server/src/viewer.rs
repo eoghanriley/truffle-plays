@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 pub struct Streams {
-    names: Vec<Org>,
+    names: Vec<StreamNames>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -14,6 +14,11 @@ pub struct Viewer {
     user_id: String,
     input: String,
     stream: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
+pub struct StreamNames {
+    pub name: String,
 }
 
 pub async fn shift(
@@ -33,14 +38,14 @@ pub async fn shift(
             .await
             .unwrap();
 
-    if verify_hash(&streamer.api_token.unwrap(), &payload.api_token) == false {
+    if verify_hash(&streamer.api_token, &payload.api_token) == false {
         return Json(AppRes {
             body: None,
             error: Some("Error with validation"),
         });
     }
 
-    if stream.status.unwrap() == false {
+    if stream.status == false {
         return Json(AppRes {
             body: None,
             error: Some("Stream not active"),
@@ -97,7 +102,7 @@ pub async fn push(
         .await
         .unwrap();
 
-    if streamer.status.unwrap() == false {
+    if streamer.status == false {
         return Json(AppRes {
             body: None,
             error: Some("Stream not active"),
@@ -118,7 +123,7 @@ pub async fn push(
 
 pub async fn get_active_streamers(State(state): State<AppState>) -> extract::Json<Streams> {
     Json(Streams {
-        names: sqlx::query_as::<_, Org>("SELECT stream FROM streamers where status = True")
+        names: sqlx::query_as("SELECT name FROM orgs WHERE status = True")
             .fetch_all(&state.db_pool)
             .await
             .unwrap(),
