@@ -1,4 +1,4 @@
-use crate::{db::Streamer, verify_hash, AppReq, AppRes, AppState, Stream};
+use crate::{db::Mod, db::Org, verify_hash, AppReq, AppRes, AppState};
 use axum::{extract, extract::State, Json};
 use chrono::{DateTime, Utc};
 use rustis::{commands::ListCommands, commands::StringCommands};
@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 pub struct Streams {
-    names: Vec<Stream>,
+    names: Vec<StreamNames>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -16,32 +16,43 @@ pub struct Viewer {
     stream: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
+pub struct StreamNames {
+    pub name: String,
+}
+
 pub async fn shift(
     State(mut state): State<AppState>,
     extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, Vec<String>>> {
-    let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE org_id = $1 LIMIT 1")
-            .bind(payload.org_id)
+    let streamer = sqlx::query_as::<_, Mod>(r#"SELECT * FROM mods WHERE org_id = $1 LIMIT 1"#)
+        .bind(payload.id)
+        .fetch_one(&state.db_pool)
+        .await
+        .unwrap();
+
+    let stream =
+        sqlx::query_as::<_, Org>(r#"SELECT status, name FROM streams WHERE org_id = $1 LIMIT 1"#)
+            .bind(&streamer.org_id)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
 
-    if verify_hash(&streamer.api_token.unwrap(), &payload.api_token) == false {
+    if verify_hash(&streamer.api_token, &payload.api_token) == false {
         return Json(AppRes {
             body: None,
             error: Some("Error with validation"),
         });
     }
 
-    if streamer.active_stream.unwrap() == false {
+    if stream.status == false {
         return Json(AppRes {
             body: None,
             error: Some("Stream not active"),
         });
     }
 
-    let res: Vec<String> = state.redis_client.rpop(streamer.stream, 10).await.unwrap();
+    let res: Vec<String> = state.redis_client.rpop(stream.name, 10).await.unwrap();
     Json(AppRes {
         body: Some(res),
         error: None,
@@ -85,14 +96,13 @@ pub async fn push(
         .await
         .unwrap();
 
-    let streamer =
-        sqlx::query_as::<_, Streamer>("SELECT * FROM streamers WHERE stream = $1 LIMIT 1")
-            .bind(&payload.stream)
-            .fetch_one(&state.db_pool)
-            .await
-            .unwrap();
+    let streamer = sqlx::query_as::<_, Org>("SELECT status FROM streams WHERE stream = $1 LIMIT 1")
+        .bind(&payload.stream)
+        .fetch_one(&state.db_pool)
+        .await
+        .unwrap();
 
-    if streamer.active_stream.unwrap() == false {
+    if streamer.status == false {
         return Json(AppRes {
             body: None,
             error: Some("Stream not active"),
@@ -113,11 +123,9 @@ pub async fn push(
 
 pub async fn get_active_streamers(State(state): State<AppState>) -> extract::Json<Streams> {
     Json(Streams {
-        names: sqlx::query_as::<_, Stream>(
-            "SELECT stream, org_id FROM streamers where active_stream = True",
-        )
-        .fetch_all(&state.db_pool)
-        .await
-        .unwrap(),
+        names: sqlx::query_as("SELECT name FROM orgs WHERE status = True")
+            .fetch_all(&state.db_pool)
+            .await
+            .unwrap(),
     })
 }

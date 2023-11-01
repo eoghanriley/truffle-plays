@@ -4,8 +4,8 @@ mod streamer;
 mod util;
 mod viewer;
 
-use crate::{db::Stream, util::AppReq, util::AppRes};
-use auth::{login, regen_token, register_streamer};
+use crate::{util::AppReq, util::AppRes};
+use auth::{login, regen_token, register_mod};
 use axum::{
     http::{header, Method},
     routing::get,
@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/shift", post(shift))
         .route("/push", post(push))
-        .route("/register/:link", post(register_streamer))
+        .route("/register/:link", post(register_mod))
         .route("/regen_token", post(regen_token))
         .route("/toggle_stream", post(toggle_stream))
         .route("/login", post(login))
