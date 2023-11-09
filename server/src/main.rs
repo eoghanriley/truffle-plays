@@ -28,6 +28,7 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Get redis and postgres env vars
     dotenv::dotenv().ok();
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
 
@@ -38,8 +39,10 @@ async fn main() -> Result<()> {
         .await
         .unwrap();
 
+    // Migrate db schema
     sqlx::migrate!().run(&db_pool).await.unwrap();
 
+    // Init cors
     let cors = CorsLayer::new()
         .allow_methods([Method::POST, Method::GET, Method::OPTIONS])
         .allow_headers([
@@ -50,6 +53,8 @@ async fn main() -> Result<()> {
             header::CONTENT_TYPE,
         ])
         .allow_origin(Any);
+
+    // Init router
     let app = Router::new()
         .route("/shift", post(shift))
         .route("/push", post(push))
@@ -64,6 +69,7 @@ async fn main() -> Result<()> {
         })
         .layer(cors);
 
+    // Run
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())
         .await

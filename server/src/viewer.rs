@@ -25,19 +25,22 @@ pub async fn shift(
     State(mut state): State<AppState>,
     extract::Json(payload): extract::Json<AppReq>,
 ) -> Json<AppRes<'static, Vec<String>>> {
-    let streamer = sqlx::query_as::<_, Mod>(r#"SELECT * FROM mods WHERE org_id = $1 LIMIT 1"#)
-        .bind(payload.id)
+    // Get user and org
+    let streamer = sqlx::query_as::<_, Mod>(r#"SELECT * FROM mods WHERE org_id = $1 AND name = $2 LIMIT 1"#)
+        .bind(payload.org_id)
+        .bind(payload.name)
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
 
     let stream =
-        sqlx::query_as::<_, Org>(r#"SELECT status, name FROM streams WHERE org_id = $1 LIMIT 1"#)
+        sqlx::query_as::<_, Org>(r#"SELECT * FROM orgs WHERE org_id = $1 LIMIT 1"#)
             .bind(&streamer.org_id)
             .fetch_one(&state.db_pool)
             .await
             .unwrap();
 
+    // Auth user
     if verify_hash(&streamer.api_token, &payload.api_token) == false {
         return Json(AppRes {
             body: None,
@@ -52,6 +55,7 @@ pub async fn shift(
         });
     }
 
+    // Get and return 10 inputs
     let res: Vec<String> = state.redis_client.rpop(stream.name, 10).await.unwrap();
     Json(AppRes {
         body: Some(res),
@@ -64,6 +68,7 @@ pub async fn push(
     State(mut state): State<AppState>,
     extract::Json(payload): extract::Json<Viewer>,
 ) -> Json<AppRes<'static, &'static str>> {
+    // Check if enough time has elapsed for user
     let last_push: Option<String> = state
         .redis_client
         .get(payload.user_id.clone())
@@ -90,13 +95,15 @@ pub async fn push(
         }
     }
 
+    // Update time since last message
     let _ = state
         .redis_client
         .set(payload.user_id, Utc::now().to_string())
         .await
         .unwrap();
 
-    let streamer = sqlx::query_as::<_, Org>("SELECT status FROM streams WHERE stream = $1 LIMIT 1")
+    // Get org
+    let streamer = sqlx::query_as::<_, Org>("SELECT * FROM orgs WHERE name = $1 LIMIT 1")
         .bind(&payload.stream)
         .fetch_one(&state.db_pool)
         .await
@@ -109,6 +116,7 @@ pub async fn push(
         });
     }
 
+    // Save input
     let _ = state
         .redis_client
         .lpush(payload.stream, payload.input)
