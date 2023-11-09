@@ -61,12 +61,13 @@ pub async fn register_mod(
         .hash_password(&unhashed_token.as_bytes(), &token_salt)
         .unwrap()
         .to_string();
+    let id = gen_uuid().to_string();
 
     // Create user
     sqlx::query(
         "INSERT INTO mods (id, name, password, org_id, api_token, root, receiver) VALUES ($1, $2, $3, $4, $5, $6, $7)",
     )
-    .bind(gen_uuid().to_string())
+    .bind(&id)
     .bind(payload.name)
     .bind(payload.password)
     .bind(payload.org_id)
@@ -78,7 +79,8 @@ pub async fn register_mod(
     .unwrap();
 
     // Mark link as used
-    sqlx::query("UPDATE register_links SET used = True WHERE link = $1")
+    sqlx::query("UPDATE register_links SET used = True, used_by = $1 WHERE link = $2")
+        .bind(id)
         .bind(valid.link)
         .execute(&state.db_pool)
         .await

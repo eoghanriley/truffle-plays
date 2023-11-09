@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
         .unwrap();
 
     // Migrate db schema
-    sqlx::migrate!().run(&db_pool).await.unwrap();
+    sqlx::migrate!("./migrations").run(&db_pool).await.unwrap();
 
     // Init cors
     let cors = CorsLayer::new()
