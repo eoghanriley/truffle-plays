@@ -9,7 +9,8 @@ use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Login {
-    id: String,
+    name: String,
+    org_id: String,
     password: String,
 }
 
@@ -60,11 +61,13 @@ pub async fn register_mod(
         .hash_password(&unhashed_token.as_bytes(), &token_salt)
         .unwrap()
         .to_string();
+    let id = gen_uuid().to_string();
 
+    // Create user
     sqlx::query(
         "INSERT INTO mods (id, name, password, org_id, api_token, root, receiver) VALUES ($1, $2, $3, $4, $5, $6, $7)",
     )
-    .bind(gen_uuid().to_string())
+    .bind(&id)
     .bind(payload.name)
     .bind(payload.password)
     .bind(payload.org_id)
@@ -75,7 +78,9 @@ pub async fn register_mod(
     .await
     .unwrap();
 
-    sqlx::query("UPDATE register_links SET used = True WHERE link = $1")
+    // Mark link as used
+    sqlx::query("UPDATE register_links SET used = True, used_by = $1 WHERE link = $2")
+        .bind(id)
         .bind(valid.link)
         .execute(&state.db_pool)
         .await
@@ -94,14 +99,16 @@ pub fn gen_uuid() -> Uuid {
 #[axum_macros::debug_handler]
 pub async fn regen_token(
     State(state): State<AppState>,
-    extract::Json(payload): extract::Json<Mod>,
+    extract::Json(payload): extract::Json<Login>,
 ) -> Json<AppRes<'static, String>> {
+    // Get user
     let user = sqlx::query_as::<_, Mod>("SELECT * FROM mods WHERE org_id = $1 LIMIT 1")
         .bind(payload.org_id)
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
 
+    // Auth user
     if verify_hash(&user.password, &payload.password) == false {
         return Json(AppRes {
             body: None,
@@ -109,6 +116,7 @@ pub async fn regen_token(
         });
     }
 
+    // Create new token
     let unhashed_token = gen_uuid().to_string();
 
     let salt = SaltString::generate(&mut OsRng);
@@ -119,12 +127,14 @@ pub async fn regen_token(
         .unwrap()
         .to_string();
 
+    // Save new token
     sqlx::query("UPDATE mods SET api_token = $1 WHERE id = $2 RETURNING api_token")
         .bind(hashed_token)
         .bind(user.id)
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
+
     Json(AppRes {
         body: Some(unhashed_token),
         error: None,
@@ -135,12 +145,15 @@ pub async fn login(
     State(state): State<AppState>,
     extract::Json(payload): extract::Json<Login>,
 ) -> extract::Json<AppRes<'static, bool>> {
-    let user = sqlx::query_as::<_, Mod>("SELECT * FROM mods WHERE id = $1 LIMIT 1")
-        .bind(&payload.id)
+    // Get user
+    let user = sqlx::query_as::<_, Mod>("SELECT * FROM mods WHERE org_id = $1 AND name = $2 LIMIT 1")
+        .bind(&payload.org_id)
+        .bind(payload.name)
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
 
+    // Auth user
     if verify_hash(&user.password, &payload.password) == false {
         return Json(AppRes {
             body: None,
@@ -148,12 +161,12 @@ pub async fn login(
         });
     }
 
-    let stream = sqlx::query_as::<_, Org>(r#"SELECT status FROM streams WHERE org_id = $1"#)
+    // Get and return org's stream status
+    let stream = sqlx::query_as::<_, Org>(r#"SELECT * FROM orgs WHERE org_id = $1"#)
         .bind(user.org_id)
         .fetch_one(&state.db_pool)
         .await
         .unwrap();
-
     Json(AppRes {
         body: Some(stream.status),
         error: None,
