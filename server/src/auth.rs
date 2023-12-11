@@ -63,6 +63,27 @@ pub async fn register_mod(
         .to_string();
     let id = gen_uuid().to_string();
 
+    let mut root = false;
+    let mut receiver = false;
+
+    let org_exists = sqlx::query!(r#"SELECT EXISTS (SELECT 1 FROM orgs WHERE org_id = $1) as exists"#, &payload.org_id)
+        .fetch_one(&state.db_pool)
+        .await
+        .unwrap()
+        .exists
+        .unwrap();
+    if !org_exists {
+        root = true;
+        receiver = true;
+
+        sqlx::query(r#"INSERT INTO orgs (org_id, name) VALUES ($1, $2)"#)
+            .bind(&payload.org_id)
+            .bind(format!("{}'s org", &payload.name))
+            .execute(&state.db_pool)
+            .await
+            .unwrap();
+    }
+
     // Create user
     sqlx::query(
         "INSERT INTO mods (id, name, password, org_id, api_token, root, receiver) VALUES ($1, $2, $3, $4, $5, $6, $7)",
@@ -72,8 +93,8 @@ pub async fn register_mod(
     .bind(payload.password)
     .bind(payload.org_id)
     .bind(hashed_token)
-    .bind(false)
-    .bind(false)
+    .bind(root)
+    .bind(receiver)
     .execute(&state.db_pool)
     .await
     .unwrap();
